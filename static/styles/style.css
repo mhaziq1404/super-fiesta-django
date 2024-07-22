@@ -644,6 +644,9 @@ a {
   background-color: var(--color-dark);
   border-radius: 1rem;
   padding: 2rem;
+  max-height: 10%;
+  overflow: hidden;
+  overflow-y: auto;
 }
 
 .roomListRoom__header {
