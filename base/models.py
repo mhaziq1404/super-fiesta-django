@@ -30,11 +30,13 @@ class Room(models.Model):
         ('AI', 'AI'),
     )
     opponent_type = models.CharField(max_length=10, choices=OPPONENT_TYPE_CHOICES, default='ai')
-    opponent_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='opponent_user')
 
     won_by_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='won_by_user')
     won_by_ai = models.BooleanField(default=False)
     is_expired = models.BooleanField(default=False)
+    host_ready = models.BooleanField(default=False)
+    opp_ready = models.BooleanField(default=False)
+    is_2player = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-updated', '-created']

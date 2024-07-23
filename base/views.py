@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 from .models import Room, Message, User, Home_Message
 from .forms import RoomForm, UserForm, MyUserCreationForm
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
@@ -67,7 +68,7 @@ def home(request):
         Q(points__icontains=q)
     )
 
-    room_count = rooms.count()
+    room_count = Room.objects.filter(is_expired=False).count()
     home_messages = Home_Message.objects.all()[0:8]
 
     context = {'rooms': rooms, 'room_count': room_count, 'room_messages': home_messages}
@@ -79,20 +80,42 @@ def home(request):
         return redirect('home')
     return render(request, 'base/home.html', context)
 
-
+@login_required(login_url='login')
 def room(request, pk):
     room = Room.objects.get(id=pk)
     room_messages = room.message_set.all()
     participants = room.participants.all()
 
     if request.method == 'POST':
-        message = Message.objects.create(
-            user=request.user,
-            room=room,
-            body=request.POST.get('body')
-        )
-        room.participants.add(request.user)
-        return redirect('room', pk=room.id)
+        if 'join' in request.POST:
+            if request.user not in room.participants.all():
+                room.participants.add(request.user)
+
+                # Check if the participant is the opponent
+                if room.participants.count() == 2:  # Assuming the room is now full
+                    # Set opponent_ready to False
+                    if room.host != request.user:
+                        room.opp_ready = False
+                    else:
+                        room.host_ready = False
+                    room.save()
+
+            return redirect('room', pk=room.id)
+        elif request.POST.get('body'):
+            message = Message.objects.create(
+                user=request.user,
+                room=room,
+                body=request.POST.get('body')
+            )
+            return redirect('room', pk=room.id)
+        elif 'host_ready' in request.POST:
+            room.host_ready = True
+            room.save()
+            return redirect('room', pk=room.id)
+        elif 'opp_ready' in request.POST:
+            room.opp_ready = True
+            room.save()
+            return redirect('room', pk=room.id)
 
     context = {'room': room, 'room_messages': room_messages, 'participants': participants}
     return render(request, 'base/room.html', context)
@@ -111,15 +134,28 @@ def userProfile(request, pk):
 def createRoom(request):
     form = RoomForm()
     if request.method == 'POST':
-        Room.objects.create(
-            host=request.user,
-            name=request.POST.get('name'),
-            points=request.POST.get('points'),
-            opponent_type= request.POST.get('opponent_type'),
-            description=request.POST.get('description'),
-        )
-        return redirect('home')
-
+        if request.POST.get('opponent_type') == 'vs Player':
+            room = Room.objects.create(
+                host=request.user,
+                name=request.POST.get('name'),
+                points=request.POST.get('points'),
+                opponent_type= request.POST.get('opponent_type'),
+                is_2player=True,
+                description=request.POST.get('description'),
+            )
+            room.participants.add(request.user)
+            return redirect('home')
+        else:
+            room = Room.objects.create(
+                host=request.user,
+                name=request.POST.get('name'),
+                points=request.POST.get('points'),
+                opponent_type= request.POST.get('opponent_type'),
+                is_2player=False,
+                description=request.POST.get('description'),
+            )
+            room.participants.add(request.user)
+            return redirect('home')
     context = {'form': form}
     return render(request, 'base/room_form.html', context)
 
@@ -192,6 +228,32 @@ def activityPage(request):
 @login_required(login_url='login')
 def pongPage(request, pk):
     room = Room.objects.get(id=pk)
+
+    if request.method == 'POST':
+        winner = request.POST.get('winner')
+        if winner:
+            if room.opponent_type == 'AI':
+                if winner == 'AI':
+                    room.won_by_ai = True
+                    room.is_expired = True
+                    room.save()
+                    return JsonResponse({'status': 'success'})
+                else:
+                    room.won_by_user = request.user
+                    room.is_expired = True
+                    room.save()
+                    return JsonResponse({'status': 'success'})
+            if room.opponent_type == 'vs Player':
+                room.won_by_user = request.user
+                room.is_expired = True
+                room.save()
+                return JsonResponse({'status': 'success'})
+            if room.opponent_type == 'Tournament':
+                room.won_by_user = request.user
+                room.is_expired = True
+                room.save()
+                return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'failed', 'error': 'No winner specified'})
     
     context = {'room': room}
-    return render(request, 'base/pong.html', context)
+    return render(request, 'base/pong_ai.html', context)

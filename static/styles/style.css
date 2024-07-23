@@ -98,6 +98,11 @@ a {
   color: var(--color-dark);
 }
 
+.btn--main--red {
+  background-color: var(--color-error);
+  color: var(--color-dark);
+}
+
 .btn:hover {
   opacity: 0.9;
 }
