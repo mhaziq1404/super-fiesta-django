@@ -1,14 +1,4 @@
-#### Video Tutorial of this project
-https://youtu.be/SQ4A7Q6_md8
-<br><br>
-
-#### Getting the files
-Download zip file or <br>
-Clone with git + remove git folder
-```
-git clone https://github.com/andyjud/django-starter.git . && rm -rf .git
-```
-<br><br><br>
+# super-fiesta-django
 
 ## Setup
 
@@ -51,6 +41,14 @@ python manage.py runserver
 
 <br>
 
+#### - NOTES
+```
+pip freeze > requirements.txt  (how to save dependencies)
+pip install --upgrade pip (upgrade pip)
+```
+
+<br>
+
 #### - Generate Secret Key ( ! Important for deployment ! )
 ```
 python manage.py shell
@@ -58,5 +56,3 @@ from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
 exit()
 ```
-
-
