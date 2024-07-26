@@ -57,7 +57,7 @@ class ChatroomConsumer(WebsocketConsumer):
             'user': self.user,
             'chat_group': self.chatroom
         }
-        html = render_to_string("a_rtchat/partials/chat_message_p.html", context=context)
+        html = render_to_string("chat/partials/chat_message_p.html", context=context)
         self.send(text_data=html)
         
         
@@ -82,5 +82,5 @@ class ChatroomConsumer(WebsocketConsumer):
             'chat_group' : self.chatroom,
             'users': users
         }
-        html = render_to_string("a_rtchat/partials/online_count.html", context)
+        html = render_to_string("chat/partials/online_count.html", context)
         self.send(text_data=html) 

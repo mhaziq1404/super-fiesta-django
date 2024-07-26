@@ -49,7 +49,7 @@
         <div id='chat_container' class="overflow-y-auto grow">
             <ul id='chat_messages' class="flex flex-col justify-end gap-2 p-4">
                 {% for message in chat_messages reversed %}
-                {% include 'a_rtchat/chat_message.html' %}
+                {% include 'chat/chat_message.html' %}
                 {% endfor %}
             </ul>
         </div>
@@ -77,7 +77,7 @@
     </div>
     {% if chat_group.members.exists %}
     <a href="{% url 'chatroom-leave' chat_group.group_name %}">
-        {% include 'a_rtchat/partials/modal_chat_leave.html' %}
+        {% include 'chat/partials/modal_chat_leave.html' %}
     </a>
     {% endif %}
 </wrapper>

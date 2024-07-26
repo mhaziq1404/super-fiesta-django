@@ -1,12 +1,15 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 from .models import *
-from .forms import RoomForm, UserForm, MyUserCreationForm
+from .forms import *
 from django.views.decorators.csrf import csrf_exempt
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.http import Http404
 
 def loginPage(request):
     page = 'login'
@@ -56,6 +59,7 @@ def registerPage(request):
     return render(request, 'base/login_register.html', {'form': form})
 
 
+@login_required(login_url='login')
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     chat_messages = chat_group.chat_messages.all()[:30]
@@ -70,14 +74,22 @@ def home(request, chatroom_name='public-chat'):
                 other_user = member
                 break
             
-    if chat_group.groupchat_name:
-        if request.user not in chat_group.members.all():
-            if request.user.emailaddress_set.filter(verified=True).exists():
-                chat_group.members.add(request.user)
-            else:
-                messages.warning(request, 'You need to verify your email to join the chat!')
-                return redirect('profile-settings')
+    # if chat_group.groupchat_name:
+    #     if request.user not in chat_group.members.all():
+    #         if request.user.emailaddress_set.exists():
+    #             chat_group.members.add(request.user)
+    #         else:
+    #             messages.warning(request, 'You need to verify your email to join the chat!')
+    #             return redirect('profile-settings')
     
+    context = {
+        'chat_messages' : chat_messages, 
+        'form' : form,
+        'other_user' : other_user,
+        'chatroom_name' : chatroom_name,
+        'chat_group' : chat_group,
+    }
+
     if request.htmx:
         form = ChatmessageCreateForm(request.POST)
         if form.is_valid:
@@ -337,7 +349,7 @@ def create_groupchat(request):
     context = {
         'form': form
     }
-    return render(request, 'a_rtchat/create_groupchat.html', context)
+    return render(request, 'chat/create_groupchat.html', context)
 
 
 @login_required(login_url='login')
@@ -364,7 +376,7 @@ def chatroom_edit_view(request, chatroom_name):
         'form' : form,
         'chat_group' : chat_group
     }   
-    return render(request, 'a_rtchat/chatroom_edit.html', context) 
+    return render(request, 'chat/chatroom_edit.html', context) 
 
 
 @login_required(login_url='login')
@@ -378,7 +390,7 @@ def chatroom_delete_view(request, chatroom_name):
         messages.success(request, 'Chatroom deleted')
         return redirect('home')
     
-    return render(request, 'a_rtchat/chatroom_delete.html', {'chat_group':chat_group})
+    return render(request, 'chat/chatroom_delete.html', {'chat_group':chat_group})
 
 
 @login_required(login_url='login')
