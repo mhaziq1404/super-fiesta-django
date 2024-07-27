@@ -12,7 +12,50 @@
     <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <title>Ft_Transcendence - PongGame!</title>
+    <style type="text/tailwindcss">
+        [x-cloak] { 
+            display: none !important; 
+        }
+        h1 {
+            @apply text-4xl font-bold mb-4
+        }
+        h2 {
+            @apply text-xl font-bold mb-2
+        }
+        p {
+            @apply mb-4
+        }
+        .button, button, [type='submit'], [type='button'] {
+            @apply bg-indigo-600 text-white font-bold px-6 py-4 inline-block 
+            rounded-lg shadow-lg transition-all cursor-pointer
+        }
+        .button:hover, button:hover, [type='submit']:hover, [type='button']:hover {
+            @apply bg-indigo-700
+        }
+        .button:active, button:active, [type='submit']:active, [type='button']:active {
+            @apply scale-95
+        }
+        label {
+            @apply hidden
+        }
+        input[type=file] {
+            @apply bg-white pl-0
+        }
+        .textarea, textarea, input {
+            @apply w-full rounded-lg py-4 px-5 bg-gray-100
+        }
+        .errorlist li {
+            @apply p-1 pl-4 border-l-red-500 border-l-4 border-solid mb-2 text-red-500
+        }
+        label[for="id_remember"] {
+            @apply inline-block w-auto mr-2
+        }
+        input[name="remember"] {
+            @apply w-auto
+        }
+    </style>
 </head>
 
 <body>
