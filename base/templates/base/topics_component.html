@@ -70,7 +70,7 @@
             <li>
                 <div class="flex justify-start">
                     <div class="flex items-end mr-2" >
-                        <a href="{{ message.author.profile.username }}">
+                        <a href="{% url 'user-profile' message.author.id %}">
                             <div class="relative">
                                 <div id="user-{{ message.author.id }}"></div>
                                 <img class="w-8 h-8 rounded-full object-cover" src="{{ message.author.avatar.url }}">
@@ -105,7 +105,7 @@
                 {% csrf_token %}
                 {{ form }}
             </form>
-            <form id="chat_file_form" enctype="multipart/form-data" class="flex items-center w-full" 
+            <!-- <form id="chat_file_form" enctype="multipart/form-data" class="flex items-center w-full" 
                 hx-post="{% url 'chat-file-upload' chat_group.group_name %}"
                 hx-target="#chat_messages"
                 hx-swap="beforeend" 
@@ -113,7 +113,7 @@
                 {% csrf_token %}
                 <input type="file" name="file" id="id_file" class="!bg-transparent text-gray-400">
                 <button type="submit" class="whitespace-nowrap !text-sm !py-3 !px-4 h-fit">Submit File</button>
-            </form>
+            </form> -->
         </div>
     </div>
     

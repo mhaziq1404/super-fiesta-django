@@ -213,43 +213,60 @@
                         {% endif %}
                     {% endif %}
                 </div>
-                <div class="room__conversation">
-                    <div class="threads scroll">
-                        {% for message in room_messages %}
-                        <div class="thread">
-                            <div class="thread__top">
-                                <div class="thread__author">
-                                    <a href="{% url 'user-profile' message.user.id %}" class="thread__authorInfo">
-                                        <div class="avatar avatar--small">
-                                            <img src="{{ message.user.avatar.url }}" />
-                                        </div>
-                                        <span>@{{ message.user.username }}</span>
-                                    </a>
-                                    <span class="thread__date">{{ message.created|timesince }} ago</span>
+                <div class="room__conversation" class="overflow-y-auto grow">
+                    <div class="threads scroll", class="flex flex-col justify-end gap-2 p-4">
+                        {% for message in chat_messages reversed %}
+                            {% if message.author == user %}
+                            <li class="flex justify-end mb-4">
+                                <div class="bg-green-200 rounded-l-lg rounded-tr-lg p-4 max-w-[75%] text-black">
+                                    <span>{{ message.body }}</span>
                                 </div>
-                                {% if request.user == message.user %}
-                                <a href="{% url 'delete-message' message.id %}">
-                                    <div class="thread__delete">
-                                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                                            <title>remove</title>
-                                            <path d="M27.314 6.019l-1.333-1.333-9.98 9.981-9.981-9.981-1.333 1.333 9.981 9.981-9.981 9.98 1.333 1.333 9.981-9.98 9.98 9.98 1.333-1.333-9.98-9.98 9.98-9.981z"></path>
+                                <div class="flex items-end">
+                                    <svg height="13" width="8" >
+                                        <path fill="#bbf7d0" d="M6.3,10.4C1.5,8.7,0.9,5.5,0,0.2L0,13l5.2,0C7,13,9.6,11.5,6.3,10.4z"/>
+                                    </svg>
+                                </div>
+                            </li>
+                            {% else %}
+                            <li>
+                                <div class="flex justify-start">
+                                    <div class="flex items-end mr-2" >
+                                        <a href="{% url 'user-profile' message.author.id %}">
+                                            <div class="relative">
+                                                <div id="user-{{ message.author.id }}"></div>
+                                                <img class="w-8 h-8 rounded-full object-cover" src="{{ message.author.avatar.url }}">
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="flex items-end" >
+                                        <svg height="13" width="8" >
+                                            <path fill="white" d="M2.8,13L8,13L8,0.2C7.1,5.5,6.5,8.7,1.7,10.4C-1.6,11.5,1,13,2.8,13z"></path>
                                         </svg>
                                     </div>
-                                </a>
-                                {% endif %}
-                            </div>
-                            <div class="thread__details">
-                                {{ message.body }}
-                            </div>
-                        </div>
+                                    <div class="bg-white p-4 max-w-[75%] rounded-r-lg rounded-tl-lg text-black">
+                                        <span>{{ message.body }}</span>
+                                    </div>  
+                                </div>
+                                <div class="text-sm font-light py-1 ml-10">
+                                    <span class="text-white">{{ message.author.profile.name }}</span> 
+                                    <span class="text-gray-400">@{{ message.author.username }}</span>
+                                </div>
+                            </li>
+                            {% endif %}
                         {% endfor %}
                     </div>
-                </div>
-                <div class="room__message">
-                    <form action="" method="POST">
-                        {% csrf_token %}
-                        <input name="body" placeholder="Write your message here..." />
-                    </form>
+                    <div class="sticky bottom-0 z-10 p-2 bg-gray-800">
+                        <div class="flex flex-col gap-4 items-center rounded-xl px-2 py-2">
+                            <form id="chat_message_form" class="w-full"
+                                hx-ext="ws"
+                                ws-connect="/ws/chatroom/{{ chatroom_name }}"
+                                ws-send 
+                                _="on htmx:wsAfterSend reset() me">
+                                {% csrf_token %}
+                                {{ form }}
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

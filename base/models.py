@@ -102,6 +102,7 @@ class Room(models.Model):
 class ChatGroup(models.Model):
     group_name = models.CharField(max_length=128, unique=True, blank=True)
     groupchat_name = models.CharField(max_length=128, null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, null=True, default=None)
     admin = models.ForeignKey(User, related_name='groupchats', blank=True, null=True, on_delete=models.SET_NULL)
     users_online = models.ManyToManyField(User, related_name='online_in_groups', blank=True)
     members = models.ManyToManyField(User, related_name='chat_groups', blank=True)

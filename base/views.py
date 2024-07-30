@@ -131,11 +131,57 @@ def home(request, chatroom_name='public-chat'):
     # }
     return render(request, 'base/home.html', context)
 
+
+
+
 @login_required(login_url='login')
 def room(request, pk):
     room = Room.objects.get(id=pk)
-    room_messages = room.message_set.all()
+    # room_messages = room.message_set.all()
     participants = room.participants.all()
+    chat_group = get_object_or_404(ChatGroup, room=room)
+    chat_messages = chat_group.chat_messages.all()[:30]
+    form = ChatmessageCreateForm()
+    
+    other_user = None
+    if chat_group.is_private:
+        if request.user not in chat_group.members.all():
+            raise Http404()
+        for member in chat_group.members.all():
+            if member != request.user:
+                other_user = member
+                break
+
+    chatroom_name = room.name
+            
+    # if chat_group.groupchat_name:
+    #     if request.user not in chat_group.members.all():
+    #         if request.user.emailaddress_set.exists():
+    #             chat_group.members.add(request.user)
+    #         else:
+    #             messages.warning(request, 'You need to verify your email to join the chat!')
+    #             return redirect('profile-settings')
+    
+    context = {
+        'chat_messages' : chat_messages, 
+        'form' : form,
+        'other_user' : other_user,
+        'chatroom_name' : chatroom_name,
+        'chat_group' : chat_group,
+    }
+
+    if request.htmx:
+        form = ChatmessageCreateForm(request.POST)
+        if form.is_valid:
+            message = form.save(commit=False)
+            message.author = request.user
+            message.group = chat_group
+            message.save()
+            context = {
+                'message' : message,
+                'user' : request.user
+            }
+            return render(request, 'chat/partials/chat_message_p.html', context)
 
     if request.method == 'POST':
         if 'join' in request.POST:
@@ -168,7 +214,14 @@ def room(request, pk):
             room.save()
             return redirect('room', pk=room.id)
 
-    context = {'room': room, 'room_messages': room_messages, 'participants': participants}
+    context = {
+            'room': room,
+            'participants': participants,
+            'chat_messages' : chat_messages, 
+            'form' : form,
+            'chatroom_name' : chatroom_name,
+            'chat_group' : chat_group,
+        }
     return render(request, 'base/room.html', context)
 
 
@@ -176,8 +229,8 @@ def room(request, pk):
 def userProfile(request, pk):
     user = User.objects.get(id=pk)
     rooms = user.room_set.all()
-    room_messages = user.message_set.all()
-    context = {'user': user, 'rooms': rooms, 'room_messages': room_messages}
+    # room_messages = user.message_set.all()
+    context = {'user': user, 'rooms': rooms}
     return render(request, 'base/profile.html', context)
 
 
@@ -194,6 +247,13 @@ def createRoom(request):
                 is_2player=True,
                 description=request.POST.get('description'),
             )
+            new_groupchat = ChatGroup.objects.create(
+                admin = request.user,
+                group_name = request.POST.get('name'),
+                groupchat_name = request.POST.get('name'),
+                room = room,
+            )
+            new_groupchat.members.add(request.user)
             room.participants.add(request.user)
             return redirect('home')
         else:
