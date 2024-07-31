@@ -4,5 +4,6 @@ from .consumers import *
 
 websocket_urlpatterns = [
     path("ws/chatroom/<chatroom_name>", ChatroomConsumer.as_asgi()),
+    # path("ws/room/<room_name>", RoomConsumer.as_asgi()),
     # path("ws/online-status/", OnlineStatusConsumer.as_asgi()),
 ]

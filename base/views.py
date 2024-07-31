@@ -176,6 +176,7 @@ def room(request, pk):
             message = form.save(commit=False)
             message.author = request.user
             message.group = chat_group
+            message.room = room
             message.save()
             context = {
                 'message' : message,
