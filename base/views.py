@@ -63,16 +63,13 @@ def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     chat_messages = chat_group.chat_messages.all()[:30]
     form = ChatmessageCreateForm()
+
+    other_user = next((member for member in chat_group.members.all() if member != request.user), None)
     
-    other_user = None
-    if chat_group.is_private:
-        if request.user not in chat_group.members.all():
-            raise Http404()
-        for member in chat_group.members.all():
-            if member != request.user:
-                other_user = member
-                break
-            
+    if chat_group.is_private and request.user not in chat_group.members.all():
+        raise Http404()
+    
+    # Optionally include email verification for joining the chat
     # if chat_group.groupchat_name:
     #     if request.user not in chat_group.members.all():
     #         if request.user.emailaddress_set.exists():
@@ -80,141 +77,99 @@ def home(request, chatroom_name='public-chat'):
     #         else:
     #             messages.warning(request, 'You need to verify your email to join the chat!')
     #             return redirect('profile-settings')
-    
-    context = {
-        'chat_messages' : chat_messages, 
-        'form' : form,
-        'other_user' : other_user,
-        'chatroom_name' : chatroom_name,
-        'chat_group' : chat_group,
-    }
 
-    if request.htmx:
+    if request.htmx and request.method == 'POST':
         form = ChatmessageCreateForm(request.POST)
-        if form.is_valid:
+        if form.is_valid():
             message = form.save(commit=False)
             message.author = request.user
             message.group = chat_group
             message.save()
-            context = {
-                'message' : message,
-                'user' : request.user
-            }
-            return render(request, 'chat/partials/chat_message_p.html', context)
+            return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
     
-    # return render(request, 'a_rtchat/chat.html', context)
-    q = request.GET.get('q') if request.GET.get('q') else ''
-
+    q = request.GET.get('q', '')
     rooms = Room.objects.filter(
         Q(name__icontains=q) |
         Q(description__icontains=q) |
         Q(points__icontains=q)
     )
-
     room_count = Room.objects.filter(is_expired=False).count()
 
     context = {
-        'chat_messages' : chat_messages, 
-        'form' : form,
-        'other_user' : other_user,
-        'chatroom_name' : chatroom_name,
-        'chat_group' : chat_group,
+        'chat_messages': chat_messages,
+        'form': form,
+        'other_user': other_user,
+        'chatroom_name': chatroom_name,
+        'chat_group': chat_group,
         'rooms': rooms,
         'room_count': room_count,
         'user': request.user,
     }
-    # context = {
-    #     'rooms': rooms,
-    #     'room_count': room_count,
-    #     'user': request.user,
-    # }
+
     return render(request, 'base/home.html', context)
-
-
-
 
 @login_required(login_url='login')
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
-    # room_messages = room.message_set.all()
+
+    if room.opponent_type == "AI":
+        return render(request, 'base/room.html', {'room': room})
+
     participants = room.participants.all()
     chat_group = get_object_or_404(ChatGroup, room=room)
     chat_messages = chat_group.chat_messages.all()[:30]
     form = ChatmessageCreateForm()
     
-    other_user = None
-    if chat_group.is_private:
-        if request.user not in chat_group.members.all():
-            raise Http404()
-        for member in chat_group.members.all():
-            if member != request.user:
-                other_user = member
-                break
-
-    chatroom_name = room.name
-            
-    # if chat_group.groupchat_name:
-    #     if request.user not in chat_group.members.all():
-    #         if request.user.emailaddress_set.exists():
-    #             chat_group.members.add(request.user)
-    #         else:
-    #             messages.warning(request, 'You need to verify your email to join the chat!')
-    #             return redirect('profile-settings')
+    other_user = next((member for member in chat_group.members.all() if member != request.user), None)
     
+    if chat_group.is_private and request.user not in chat_group.members.all():
+        raise Http404()
+
     context = {
-        'chat_messages' : chat_messages, 
-        'form' : form,
-        'other_user' : other_user,
-        'chatroom_name' : chatroom_name,
-        'chat_group' : chat_group,
+        'room': room,
+        'participants': participants,
+        'chat_messages': chat_messages,
+        'form': form,
+        'other_user': other_user,
+        'chatroom_name': room.name,
+        'chat_group': chat_group,
     }
 
-    if request.htmx:
+    if request.htmx and request.method == 'POST':
         form = ChatmessageCreateForm(request.POST)
-        if form.is_valid:
+        if form.is_valid():
             message = form.save(commit=False)
             message.author = request.user
             message.group = chat_group
             message.room = room
             message.save()
-            context = {
-                'message' : message,
-                'user' : request.user
-            }
-            return render(request, 'chat/partials/chat_message_p.html', context)
+            return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
 
     if request.method == 'POST':
-        if 'join' in request.POST:
-            if request.user not in room.participants.all():
-                room.participants.add(request.user)
-
-                # Check if the participant is the opponent
-                if room.participants.count() == 2:  # Assuming the room is now full
-                    # Set opponent_ready to False
-                    if room.host != request.user:
-                        room.opp_ready = False
-                    else:
-                        room.host_ready = False
-                    room.save()
-
+        if 'join' in request.POST and request.user not in participants:
+            room.participants.add(request.user)
+            if room.participants.count() == 2:
+                if room.host != request.user:
+                    room.opp_ready = False
+                else:
+                    room.host_ready = False
+                room.save()
             return redirect('room', pk=room.id)
+        
+        elif request.POST.get('body'):
+            Message.objects.create(user=request.user, room=room, body=request.POST.get('body'))
+            return redirect('room', pk=room.id)
+        
         elif 'host_ready' in request.POST:
             room.host_ready = True
             room.save()
             return redirect('room', pk=room.id)
+        
         elif 'opp_ready' in request.POST:
             room.opp_ready = True
             room.save()
             return redirect('room', pk=room.id)
 
-    context = {
-            'room': room,
-            'participants': participants,
-            'chat_messages' : chat_messages, 
-            'form' : form,
-            'chatroom_name' : chatroom_name,
-            'chat_group' : chat_group,
-        }
     return render(request, 'base/room.html', context)
 
 
