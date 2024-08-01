@@ -1,97 +1,64 @@
 {% extends 'main.html' %}
 
 {% block content %}
-<main class="auth layout">
+<main>
 
   {% if page == 'login' %}
-  <div class="container">
-    <div class="layout__box">
-      <div class="layout__boxHeader">
-        <div class="layout__boxTitle">
-          <h3>Login</h3>
+  <body class="font-inter overflow-hidden">
+    <section class="flex justify-center relative">
+      <img src="https://pagedone.io/asset/uploads/1702362010.png" alt="gradient background image" class="w-full h-full object-cover fixed">
+      <div class="mx-auto max-w-lg px-6 lg:px-8 absolute py-20">
+        <img src="https://pagedone.io/asset/uploads/1702362108.png" alt="pagedone logo" class="mx-auto lg:mb-11 mb-8">
+        <div class="rounded-2xl bg-white shadow-xl">
+          <form action="" class="lg:p-11 p-7 mx-auto" method="POST">
+            {% csrf_token %}
+            <div class="mb-11">
+              <h1 class="text-gray-900 text-center font-manrope text-3xl font-bold leading-10 mb-2">Welcome Back</h1>
+              <p class="text-gray-500 text-center text-base font-medium leading-6">ft_transcendence login page</p>
+            </div>
+            <!-- <input type="text" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-6" placeholder="Username"> -->
+            <input id="username" name="email" type="email" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-6" placeholder="email">
+            <input id="password" name="password" type="password" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="Password">
+            <a href="javascript:;" class="flex justify-end mb-6">
+              <span class="text-indigo-600 text-right text-base font-normal leading-6">Forgot Password?</span>
+            </a>
+            <button type="submit" class="w-full h-12 text-white text-center text-base font-semibold leading-6 rounded-full hover:bg-indigo-800 transition-all duration-700 bg-indigo-600 shadow-sm mb-11">Login</button>
+            <a href="{% url 'register' %}" class="flex justify-center text-gray-900 text-base font-medium leading-6"> Don’t have an account? <span class="text-indigo-600 font-semibold pl-3"> Sign Up</span>
+            </a>
+          </form>
         </div>
       </div>
-      <div class="layout__body">
-        <h2 class="auth__tagline">Find your study partner</h2>
-
-        <form class="form" action="" method="POST">
-          {% csrf_token %}
-          <div class="form__group form__group">
-            <label for="room_name">Email</label>
-            <input id="username" name="email" type="email" placeholder="e.g. ****@email.com" />
-          </div>
-          <div class=" form__group">
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password"
-              placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" />
-          </div>
-
-          <button class="btn btn--main" type="submit">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-              <title>lock</title>
-              <path
-                d="M27 12h-1v-2c0-5.514-4.486-10-10-10s-10 4.486-10 10v2h-1c-0.553 0-1 0.447-1 1v18c0 0.553 0.447 1 1 1h22c0.553 0 1-0.447 1-1v-18c0-0.553-0.447-1-1-1zM8 10c0-4.411 3.589-8 8-8s8 3.589 8 8v2h-16v-2zM26 30h-20v-16h20v16z">
-              </path>
-              <path
-                d="M15 21.694v4.306h2v-4.306c0.587-0.348 1-0.961 1-1.694 0-1.105-0.895-2-2-2s-2 0.895-2 2c0 0.732 0.413 1.345 1 1.694z">
-              </path>
-            </svg>
-
-            Login
-          </button>
-        </form>
-
-        <div class="auth__action">
-          <p>Haven't signed up yet?</p>
-          <a href="{% url 'register' %}" class="btn btn--link">Sign Up</a>
-        </div>
-      </div>
-    </div>
-  </div>
+    </section>
+  </body>
+                                            
   {% else %}
-  <div class="container">
-    <div class="layout__box">
-      <div class="layout__boxHeader">
-        <div class="layout__boxTitle">
-          <h3>Register</h3>
+
+  <body class="font-inter overflow-hidden">
+    <section class="flex justify-center relative">
+      <img src="https://pagedone.io/asset/uploads/1702362010.png" alt="gradient background image" class="w-full h-full object-cover fixed">
+      <div class="mx-auto max-w-lg px-6 lg:px-8 absolute py-20">
+        <img src="https://pagedone.io/asset/uploads/1702362108.png" alt="pagedone logo" class="mx-auto lg:mb-11 mb-8">
+        <div class="rounded-2xl bg-white shadow-xl">
+          <form action="" class="lg:p-11 p-7 mx-auto" method="POST">
+            {% csrf_token %}
+            <div class="mb-11">
+              <h1 class="text-gray-900 text-center font-manrope text-3xl font-bold leading-10 mb-2">Register</h1>
+              <p class="text-gray-500 text-center text-base font-medium leading-6">ft_transcendence Sign Up page</p>
+            </div>
+            <input type="text" name="name" maxlength="200" required id="id_name" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="Your Name">
+            <input type="text" name="username" maxlength="200" required id="id_username" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="Username">
+            <input type="email" name="email" maxlength="254" autofocus required id="id_email" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="email">
+            <input type="password" name="password1" autocomplete="new-password" required id="id_password1" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="Password">
+            <input type="password" name="password2" autocomplete="new-password" required="" id="id_password2" class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-1" placeholder="Confirm Password">
+
+            <button type="submit" class="w-full h-12 text-white text-center text-base font-semibold leading-6 rounded-full hover:bg-indigo-800 transition-all duration-700 bg-indigo-600 shadow-sm mb-11">Sign Up</button>
+            <a href="{% url 'login' %}" class="flex justify-center text-gray-900 text-base font-medium leading-6"> Already have an account? <span class="text-indigo-600 font-semibold pl-3"> Login</span>
+            </a>
+          </form>
         </div>
       </div>
-      <div class="layout__body">
-        <h2 class="auth__tagline">Find your study partner</h2>
-
-        <form class="form" action="" method="POST">
-          {% csrf_token %}
-
-          {% for field in form %}
-          <div class="form__group form__group">
-            <label for="room_name">{{field.label}}</label>
-            {{field}}
-          </div>
-          {% endfor %}
-
-
-          <button class="btn btn--main" type="submit">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-              <title>lock</title>
-              <path
-                d="M27 12h-1v-2c0-5.514-4.486-10-10-10s-10 4.486-10 10v2h-1c-0.553 0-1 0.447-1 1v18c0 0.553 0.447 1 1 1h22c0.553 0 1-0.447 1-1v-18c0-0.553-0.447-1-1-1zM8 10c0-4.411 3.589-8 8-8s8 3.589 8 8v2h-16v-2zM26 30h-20v-16h20v16z">
-              </path>
-              <path
-                d="M15 21.694v4.306h2v-4.306c0.587-0.348 1-0.961 1-1.694 0-1.105-0.895-2-2-2s-2 0.895-2 2c0 0.732 0.413 1.345 1 1.694z">
-              </path>
-            </svg>
-
-            Register
-          </button>
-        </form>
-
-        <div class="auth__action">
-          <p>Already signed up?</p>
-          <a href="{% url 'login' %}" class="btn btn--link">Log In</a>
-        </div>
-      </div>
-    </div>
-  </div>
+    </section>
+  </body>
   {% endif %}
 </main>
 {% endblock content %}

@@ -1,42 +1,69 @@
 {% extends 'main.html' %}
 
 {% block content %}
-<main class="update-account layout">
-  <div class="container">
-    <div class="layout__box">
-      <div class="layout__boxHeader">
-        <div class="layout__boxTitle">
-          <a href="{% url 'home' %}">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-              <title>arrow-left</title>
-              <path
-                d="M13.723 2.286l-13.723 13.714 13.719 13.714 1.616-1.611-10.96-10.96h27.625v-2.286h-27.625l10.965-10.965-1.616-1.607z">
-              </path>
-            </svg>
-          </a>
-          <h3>Edit your profile</h3>
-        </div>
-      </div>
-      <div class="layout__body">
-        <form class="form" action="" method="POST" enctype="multipart/form-data">
-          {% csrf_token %}
-
-          {% for field in form %}
-          <div class="form__group">
-            <label for="profile_pic">{{field.label}}</label>
-            {{field}}
+<main>
+  <div class="bg-white w-full flex flex-col gap-5 px-3 md:px-16 lg:px-28 md:flex-row text-[#161931]">
+      <aside class="hidden py-4 md:w-1/3 lg:w-1/4 md:block">
+          <div class="sticky flex flex-col gap-2 p-4 text-sm border-r border-indigo-100 top-12">
+              <h2 class="pl-3 mb-4 text-2xl font-semibold">Settings</h2>
+              <a href="#" class="flex items-center px-3 py-2.5 font-bold bg-white text-indigo-900 border rounded-full">
+                  Public Profile
+              </a>
+              <a href="#"
+                 class="flex items-center px-3 py-2.5 font-semibold hover:text-indigo-900 hover:border hover:rounded-full">
+                  Account Settings
+              </a>
+              <a href="#"
+                 class="flex items-center px-3 py-2.5 font-semibold hover:text-indigo-900 hover:border hover:rounded-full">
+                  Notifications
+              </a>
           </div>
-          {% endfor %}
-
-
-          <div class="form__action">
-            <a class="btn btn--dark" href="index.html">Cancel</a>
-            <button class="btn btn--main" type="submit">Update</button>
+      </aside>
+      <div class="w-full min-h-screen py-1 md:w-2/3 lg:w-3/4">
+          <div class="p-2 md:p-4">
+              <div class="w-full px-6 pb-8 mt-8 sm:max-w-xl sm:rounded-lg">
+                  <h2 class="pl-6 text-2xl font-bold sm:text-xl">Edit Public Profile</h2>
+                  <form class="form" action="" method="POST" enctype="multipart/form-data">
+                      {% csrf_token %}
+                      <div class="grid max-w-2xl mx-auto mt-8">
+                          <div class="flex flex-col items-center space-y-5 sm:flex-row sm:space-y-0">
+                              <img class="object-cover w-40 h-40 p-1 rounded-full ring-2 ring-indigo-300 dark:ring-indigo-500"
+                                   src="{{user.avatar.url}}" alt="">
+                              <div class="flex flex-col space-y-5 sm:ml-8">
+                                  <label class="file-input-wrapper py-3.5 px-7 text-base font-medium text-indigo-100 focus:outline-none bg-[#202142] rounded-lg border border-indigo-200 hover:bg-indigo-900 focus:z-10 focus:ring-4 focus:ring-indigo-200">
+                                      Change picture
+                                      <input type="file" name="avatar" accept="image/*" id="id_avatar" class="hidden">
+                                  </label>
+                              </div>
+                          </div>
+                          <div class="items-center mt-8 sm:mt-14 text-[#202142]">
+                              <div class="flex flex-col items-center w-full mb-2 space-x-0 space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0 sm:mb-6">
+                                  <div class="w-full">
+                                      <label for="profile_pic" class="block mb-2 text-sm font-medium text-indigo-900 dark:text-white">Your Name</label>
+                                      <input type="text" id="id_name" maxlength="200" name="name" class="bg-indigo-50 border border-indigo-300 text-indigo-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" placeholder="name" value="{{user.name}}" required>
+                                  </div>
+                                  <div class="w-full">
+                                      <label for="profile_pic" class="block mb-2 text-sm font-medium text-indigo-900 dark:text-white">Your Username</label>
+                                      <input type="text" id="id_username" name="username" maxlength="200" class="bg-indigo-300 border border-indigo-300 text-indigo-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" placeholder="Username" value="{{user.username}}" required readonly>
+                                  </div>
+                              </div>
+                              <div class="mb-2 sm:mb-6">
+                                  <label for="profile_pic" class="block mb-2 text-sm font-medium text-indigo-900 dark:text-white">Your email</label>
+                                  <input type="email" id="id_email" maxlength="254" name="email" class="bg-indigo-300 border border-indigo-300 text-indigo-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" placeholder="Email" value="{{user.email}}" required readonly>
+                              </div>
+                              <div class="mb-6">
+                                  <label for="profile_pic" class="block mb-2 text-sm font-medium text-indigo-900 dark:text-white">Bio</label>
+                                  <textarea name="bio" cols="40" rows="10" required="" id="id_bio" class="block p-2.5 w-full text-sm text-indigo-900 bg-indigo-50 rounded-lg border border-indigo-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Write your bio here..." required>{{user.bio}}</textarea>
+                              </div>
+                              <div class="flex justify-end">
+                                  <button type="submit" class="text-white bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">Save</button>
+                              </div>
+                          </div>
+                      </div>
+                  </form>
+              </div>
           </div>
-        </form>
       </div>
-    </div>
-  </div>
   </div>
 </main>
 {% endblock content %}

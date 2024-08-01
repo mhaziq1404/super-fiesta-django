@@ -59,7 +59,6 @@ def registerPage(request):
     return render(request, 'base/login_register.html', {'form': form})
 
 
-@login_required(login_url='login')
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     chat_messages = chat_group.chat_messages.all()[:30]
@@ -136,7 +135,7 @@ def home(request, chatroom_name='public-chat'):
 
 @login_required(login_url='login')
 def room(request, pk):
-    room = Room.objects.get(id=pk)
+    room = get_object_or_404(Room, id=pk)
     # room_messages = room.message_set.all()
     participants = room.participants.all()
     chat_group = get_object_or_404(ChatGroup, room=room)
@@ -198,13 +197,6 @@ def room(request, pk):
                         room.host_ready = False
                     room.save()
 
-            return redirect('room', pk=room.id)
-        elif request.POST.get('body'):
-            message = Message.objects.create(
-                user=request.user,
-                room=room,
-                body=request.POST.get('body')
-            )
             return redirect('room', pk=room.id)
         elif 'host_ready' in request.POST:
             room.host_ready = True
@@ -324,7 +316,9 @@ def updateUser(request):
         form = UserForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
-            return redirect('user-profile', pk=user.id)
+            return redirect('user-profile', pk=user.id)  # Ensure 'user-profile' URL is defined and uses 'pk' parameter
+        else:
+            print(form.errors)  # For debugging purposes, prints form errors in the console
 
     return render(request, 'base/update-user.html', {'form': form})
 
