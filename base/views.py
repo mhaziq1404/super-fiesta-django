@@ -6,7 +6,6 @@ from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 from .models import *
 from .forms import *
-from django.views.decorators.csrf import csrf_exempt
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.http import Http404
@@ -193,6 +192,23 @@ def createRoom(request):
                 points=request.POST.get('points'),
                 opponent_type= request.POST.get('opponent_type'),
                 is_2player=True,
+                description=request.POST.get('description'),
+            )
+            new_groupchat = ChatGroup.objects.create(
+                admin = request.user,
+                group_name = request.POST.get('name'),
+                groupchat_name = request.POST.get('name'),
+                room = room,
+            )
+            new_groupchat.members.add(request.user)
+            room.participants.add(request.user)
+            return redirect('home')
+        elif request.POST.get('opponent_type') == 'Tournament':
+            room = Room.objects.create(
+                host=request.user,
+                name=request.POST.get('name'),
+                points=request.POST.get('points'),
+                opponent_type= request.POST.get('opponent_type'),
                 description=request.POST.get('description'),
             )
             new_groupchat = ChatGroup.objects.create(
