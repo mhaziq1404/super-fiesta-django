@@ -103,9 +103,16 @@ def home(request, chatroom_name='public-chat'):
         'rooms': rooms,
         'room_count': room_count,
         'user': request.user,
+        'home_chat': "Public-Chat",
     }
 
     return render(request, 'base/home.html', context)
+
+def room_list(request):
+    rooms = Room.objects.filter(is_expired=False)
+    if request.headers.get('HX-Request'):
+        return render(request, 'room/partials/room_list.html', {'rooms': rooms})
+    return render(request, 'base/home.html', {'rooms': rooms})
 
 @login_required(login_url='login')
 def room(request, pk):
@@ -183,54 +190,36 @@ def userProfile(request, pk):
 
 @login_required(login_url='login')
 def createRoom(request):
-    form = RoomForm()
     if request.method == 'POST':
-        if request.POST.get('opponent_type') == 'vs Player':
+        form = RoomForm(request.POST)
+        if form.is_valid():
+            opponent_type = form.cleaned_data['opponent_type']
             room = Room.objects.create(
                 host=request.user,
-                name=request.POST.get('name'),
-                points=request.POST.get('points'),
-                opponent_type= request.POST.get('opponent_type'),
-                is_2player=True,
-                description=request.POST.get('description'),
+                name=form.cleaned_data['name'],
+                points=form.cleaned_data['points'],
+                opponent_type=opponent_type,
+                description=form.cleaned_data['description'],
+                is_2player=(opponent_type == 'vs Player')
             )
             new_groupchat = ChatGroup.objects.create(
-                admin = request.user,
-                group_name = request.POST.get('name'),
-                groupchat_name = request.POST.get('name'),
-                room = room,
+                admin=request.user,
+                group_name=form.cleaned_data['name'],
+                groupchat_name=form.cleaned_data['name'],
+                room=room
             )
             new_groupchat.members.add(request.user)
             room.participants.add(request.user)
-            return redirect('home')
-        elif request.POST.get('opponent_type') == 'Tournament':
-            room = Room.objects.create(
-                host=request.user,
-                name=request.POST.get('name'),
-                points=request.POST.get('points'),
-                opponent_type= request.POST.get('opponent_type'),
-                description=request.POST.get('description'),
-            )
-            new_groupchat = ChatGroup.objects.create(
-                admin = request.user,
-                group_name = request.POST.get('name'),
-                groupchat_name = request.POST.get('name'),
-                room = room,
-            )
-            new_groupchat.members.add(request.user)
-            room.participants.add(request.user)
-            return redirect('home')
-        else:
-            room = Room.objects.create(
-                host=request.user,
-                name=request.POST.get('name'),
-                points=request.POST.get('points'),
-                opponent_type= request.POST.get('opponent_type'),
-                is_2player=False,
-                description=request.POST.get('description'),
-            )
-            room.participants.add(request.user)
-            return redirect('home')
+
+            if request.htmx:
+                # Return partial template for HTMX
+                rooms = Room.objects.filter(is_expired=False)
+                return render(request, 'room/room_list.html', {'rooms': rooms})
+            else:
+                return redirect('home')
+    else:
+        form = RoomForm()
+
     context = {'form': form}
     return render(request, 'base/room_form.html', context)
 

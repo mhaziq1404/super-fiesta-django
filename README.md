@@ -9,13 +9,6 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-###### # Windows
-```
-pip install virtualenv 
-virtualenv venv 
-venv\Scripts\activate.bat 
-```
-
 <br>
 
 #### - Install dependencies
@@ -44,7 +37,6 @@ python manage.py runserver
 #### - NOTES
 ```
 pip freeze > requirements.txt  (how to save dependencies)
-pip install --upgrade pip (upgrade pip)
 ```
 
 <br>
