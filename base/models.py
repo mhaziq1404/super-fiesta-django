@@ -73,31 +73,6 @@ class Room(models.Model):
     def __str__(self):
         return self.name
 
-# class Message(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-#     body = models.TextField()
-#     updated = models.DateTimeField(auto_now=True)
-#     created = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         ordering = ['-updated', '-created']
-
-#     def __str__(self):
-#         return self.body[0:50]
-
-# class Home_Message(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     body = models.TextField()
-#     updated = models.DateTimeField(auto_now=True)
-#     created = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         ordering = ['-updated', '-created']
-
-#     def __str__(self):
-#         return self.body[0:50]
-
 
 class ChatGroup(models.Model):
     group_name = models.CharField(max_length=128, unique=True, blank=True)
@@ -149,14 +124,13 @@ class GroupMessage(models.Model):
         except:
             return False
 
-# class Activity(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     body = models.TextField()
-#     updated = models.DateTimeField(auto_now=True)
-#     created = models.DateTimeField(auto_now_add=True)
 
-#     class Meta:
-#         ordering = ['-updated', '-created']
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
 
-#     def __str__(self):
-#         return self.body[0:50]
+    def __str__(self):
+        return self.title

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -57,6 +57,26 @@ def registerPage(request):
 
     return render(request, 'base/login_register.html', {'form': form})
 
+def notifications(request):
+    user = request.user
+    notifications = Notification.objects.filter(user=user).order_by('-created_at')
+    return render(request, 'notifications/notifications.html', {'notifications': notifications})
+
+def notifications_view(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    context = {'notifications': notifications}
+    return render(request, 'notifications.html', context)
+
+def mark_notification_as_read(request, notification_id):
+    if request.method == 'POST':
+        try:
+            notification = Notification.objects.get(id=notification_id, user=request.user)
+            notification.is_read = True
+            notification.save()
+            return JsonResponse({'success': True})
+        except Notification.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Notification not found'})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
@@ -93,6 +113,7 @@ def home(request, chatroom_name='public-chat'):
         Q(points__icontains=q)
     )
     room_count = Room.objects.filter(is_expired=False).count()
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
     context = {
         'chat_messages': chat_messages,
@@ -104,6 +125,7 @@ def home(request, chatroom_name='public-chat'):
         'room_count': room_count,
         'user': request.user,
         'home_chat': "Public-Chat",
+        'notifications': notifications,
     }
 
     return render(request, 'base/home.html', context)
@@ -114,6 +136,71 @@ def room_list(request):
         return render(request, 'room/partials/room_list.html', {'rooms': rooms})
     return render(request, 'base/home.html', {'rooms': rooms})
 
+def player_list(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    # Assuming you want the second participant
+    participants = room.participants.all()
+    other_player = participants[1] if len(participants) > 1 else None
+    
+    if request.headers.get('HX-Request'):
+        return render(request, 'room/partials/vsplayer.html', {'other_player': other_player, 'room': room})
+    
+    return render(request, 'base/room.html', {'room': room})
+
+def kick_player(request):
+    if request.method == 'POST':
+        player_id = request.POST.get('player_id')
+        room_id = request.POST.get('room_id')
+        
+        if not player_id or not room_id:
+            # Handle missing parameters
+            return redirect('room')
+        
+        room = get_object_or_404(Room, id=room_id)
+        player = get_object_or_404(User, id=player_id)
+
+        if player in room.participants.all():
+            room.participants.remove(player)
+            room.save()
+
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def leave_room(request):
+    if request.method == 'POST':
+        room_id = request.POST.get('room_id')
+        
+        if not room_id:
+            # Handle missing parameter
+            return redirect('home')
+        
+        room = get_object_or_404(Room, id=room_id)
+        user = request.user
+        
+        if user in room.participants.all():
+            room.participants.remove(user)
+        
+        # Optionally, add a success message or feedback
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def check_kickout_status(request):
+    # Get parameters
+    room_id = request.GET.get('room_id')
+    player_id = request.GET.get('player_id')
+    
+    if not room_id or not player_id:
+        return JsonResponse({'status': 'error', 'message': 'Missing parameters'})
+
+    room = get_object_or_404(Room, id=room_id)
+    player = get_object_or_404(User, id=player_id)
+
+    if player not in room.participants.all():
+        print("herererere")
+        return JsonResponse({'status': 'kickedout'})
+    
+    return JsonResponse({'status': 'still_in_room'})
+    
+
 @login_required(login_url='login')
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
@@ -121,13 +208,16 @@ def room(request, pk):
     if room.opponent_type == "AI":
         return render(request, 'base/room.html', {'room': room})
 
+    if request.user not in room.participants.all():
+        room.participants.add(request.user)
+
     participants = room.participants.all()
     chat_group = get_object_or_404(ChatGroup, room=room)
     chat_messages = chat_group.chat_messages.all()[:30]
     form = ChatmessageCreateForm()
-    
+
     other_user = next((member for member in chat_group.members.all() if member != request.user), None)
-    
+
     if chat_group.is_private and request.user not in chat_group.members.all():
         raise Http404()
 
@@ -149,32 +239,13 @@ def room(request, pk):
             message.group = chat_group
             message.room = room
             message.save()
+
             return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
 
     if request.method == 'POST':
-        if 'join' in request.POST and request.user not in participants:
-            room.participants.add(request.user)
-            if room.participants.count() == 2:
-                if room.host != request.user:
-                    room.opp_ready = False
-                else:
-                    room.host_ready = False
-                room.save()
-            return redirect('room', pk=room.id)
-        
-        elif request.POST.get('body'):
-            Message.objects.create(user=request.user, room=room, body=request.POST.get('body'))
-            return redirect('room', pk=room.id)
-        
-        elif 'host_ready' in request.POST:
-            room.host_ready = True
-            room.save()
-            return redirect('room', pk=room.id)
-        
-        elif 'opp_ready' in request.POST:
-            room.opp_ready = True
-            room.save()
-            return redirect('room', pk=room.id)
+        if request.user in room.participants.all():
+            room.participants.remove(request.user)
+            return redirect('home')
 
     return render(request, 'base/room.html', context)
 
@@ -276,9 +347,9 @@ def updateUser(request):
         form = UserForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
-            return redirect('user-profile', pk=user.id)  # Ensure 'user-profile' URL is defined and uses 'pk' parameter
+            return redirect('user-profile', pk=user.id)
         else:
-            print(form.errors)  # For debugging purposes, prints form errors in the console
+            print(form.errors)
 
     return render(request, 'base/update-user.html', {'form': form})
 

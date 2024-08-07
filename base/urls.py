@@ -10,6 +10,10 @@ urlpatterns = [
     path('', views.home, name="home"),
     path('room/<str:pk>/', views.room, name="room"),
     path('room_list', views.room_list, name="room_list"),
+    path('player-list/<int:room_id>/', views.player_list, name='player_list'),
+    path('leave-room/', views.leave_room, name='leave_room'),
+    path('kick-player/', views.kick_player, name='kick_player'),
+    path('check-kickout-status/', views.check_kickout_status, name='check_kickout_status'),
     path('profile/<str:pk>/', views.userProfile, name="user-profile"),
 
     path('create-room/', views.createRoom, name="create-room"),
@@ -30,4 +34,7 @@ urlpatterns = [
     path('chat/delete/<chatroom_name>', views.chatroom_delete_view, name="chatroom-delete"),
     path('chat/leave/<chatroom_name>', views.chatroom_leave_view, name="chatroom-leave"),
     path('chat/fileupload/<chatroom_name>', views.chat_file_upload, name="chat-file-upload"),
+
+    # path('notifications/', views.notifications_view, name='notifications'),
+    path('notifications/mark_as_read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),
 ]

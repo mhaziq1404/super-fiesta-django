@@ -1,7 +1,7 @@
 <div class="flex-col p-4">
     {% for room in rooms %}
         {% if room.is_expired == False %}
-            {% if room.opponent_type == 'AI' or room.opponent_type == 'vs Player' %}
+            {% if room.opponent_type == 'AI' %}
                 {% if room.host == request.user %}
                     <div class="relative flex flex-col items-center border border-solid border-gray-200 rounded-2xl transition-all duration-500 md:flex-row w-full bg-white">
                         <div class="block overflow-hidden md:w-52 h-48">
