@@ -78,6 +78,7 @@ def mark_notification_as_read(request, notification_id):
             return JsonResponse({'success': False, 'error': 'Notification not found'})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
+@login_required(login_url='login')
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     chat_messages = chat_group.chat_messages.all()[:30]
@@ -143,8 +144,19 @@ def player_list(request, room_id):
     participants = room.participants.all()
     other_player = participants[1] if len(participants) > 1 else None
     
+    # Get the participant to check
+    participant = request.user
+    
+    context = {
+        'other_player': other_player,
+        'room': room,
+        'participants': participants,
+        'participant': participant,
+    }
+    
     if request.headers.get('HX-Request'):
-        return render(request, 'room/partials/vsplayer.html', {'other_player': other_player, 'room': room})
+        return render(request, 'room/partials/vsplayer.html', context)
+
     
     return render(request, 'base/room.html', {'room': room})
 
