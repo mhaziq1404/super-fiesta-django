@@ -1,11 +1,11 @@
-<div class="bg-white w-full h-[4rem] rounded-tr-md rounded-tl-md p-5">
+<div class="bg-gray-800 w-full h-[4rem] rounded-tr-md rounded-tl-md p-5 text-white">
     {% if home_chat == None %}
         <p>{{room.name}} chat (Live-chat)</p>
     {% else %}
         <p>{{home_chat}} chat (Live-chat)</p>
     {% endif %}
   </div>
-  <div  id='chat_container' class="w-full h-[43.5rem] bg-indigo-100 p-2 rounded-br-md rounded-bl-md overflow-scroll">
+  <div  id='chat_container' class="w-full h-[30rem] bg-indigo-100 p-2 rounded-br-md rounded-bl-md overflow-scroll">
 
     <ul id='chat_messages' class="flex flex-col justify-end gap-2 p-4">
       {% for message in chat_messages reversed %}

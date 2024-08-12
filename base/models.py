@@ -32,7 +32,7 @@ class User(AbstractUser):
     name = models.CharField(max_length=200, null=True)
     username = models.CharField(max_length=200, null=True, blank=True)
     email = models.EmailField(unique=True, null=True)
-    bio = models.TextField(null=True, default="The User to lazy to add a Bio")
+    bio = models.TextField(null=True, default="The User too lazy to add a Bio")
     avatar = models.ImageField(null=True, default="avatar.svg")
 
     USERNAME_FIELD = 'email'

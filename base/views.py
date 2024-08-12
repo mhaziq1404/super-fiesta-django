@@ -130,6 +130,7 @@ def home(request, chatroom_name='public-chat'):
     }
 
     return render(request, 'base/home.html', context)
+    # return render(request, 'base/private_messages.html', context)
 
 def room_list(request):
     rooms = Room.objects.filter(is_expired=False)

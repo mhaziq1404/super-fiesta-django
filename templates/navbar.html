@@ -1,11 +1,13 @@
 {% load static %}
 
-<header class="navbar bg-base-100 p-4 pr-6 z-50">
-    <div class="flex-1">
-      <a href="{% url 'home' %}" class="btn btn-ghost text-xl">FT_TRANSCENDENCE</a>
-    </div>
-    <div class="flex-none">
-      {% if request.user.is_authenticated %}
+<header class="navbar bg-base-100 p-4 pr-6 z-50 h-[100px]">
+  <div class="flex-1">
+    <a href="{% url 'home' %}" class="btn btn-ghost text-xl">FT_TRANSCENDENCE</a>
+  </div>
+  <div class="flex-none">
+    {% if request.user.is_authenticated %}
+    <div class="flex items-center space-x-4">
+      <!-- Notification Dropdown -->
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
           <div class="indicator">
@@ -26,7 +28,7 @@
         </div>
         <div
           tabindex="0"
-          class="card card-compact dropdown-content bg-indigo-100 z-[1] mt-3 w-52 w-[25rem] shadow">
+          class="card card-compact dropdown-content bg-indigo-100 z-[1] mt-3 w-[25rem] shadow">
           <div class="card-body">
             {% for notification in notifications %}
                 <div role="alert" class="alert shadow-lg">
@@ -66,7 +68,29 @@
           </div>
         </div>
       </div>
-      <div class="dropdown dropdown-end pl-4">
+
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+          <div class="indicator">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor">
+              <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 8l7.89 5.26c.58.39 1.36.39 1.94 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span class="badge badge-xs bg-teal-700 text-white indicator-item" id="message-count"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Dropdown -->
+      <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
           <div class="w-10 rounded-full">
             <img
@@ -102,6 +126,14 @@
       const badge = document.getElementById('notification-count');
       if (badge) {
         const count = document.querySelectorAll('#notification-dropdown .notification-item').length;
+        badge.innerText = count > 0 ? count : '';
+      }
+    }
+
+    if (event.target.id === 'message-dropdown') {
+      const badge = document.getElementById('message-count');
+      if (badge) {
+        const count = document.querySelectorAll('#message-dropdown .message-item').length;
         badge.innerText = count > 0 ? count : '';
       }
     }
