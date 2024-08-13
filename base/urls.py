@@ -19,12 +19,10 @@ urlpatterns = [
     path('create-room/', views.createRoom, name="create-room"),
     path('update-room/<str:pk>/', views.updateRoom, name="update-room"),
     path('delete-room/<str:pk>/', views.deleteRoom, name="delete-room"),
-    path('delete-message/<str:pk>/', views.deleteMessage, name="delete-message"),
+    # path('delete-message/<str:pk>/', views.deleteMessage, name="delete-message"),
 
     path('update-user/', views.updateUser, name="update-user"),
 
-    path('topics/', views.topicsPage, name="topics"),
-    path('activity/', views.activityPage, name="activity"),
     path('pong/<str:pk>/', views.pongPage, name="pong"),
 
     path('chat/<username>', views.get_or_create_chatroom, name="start-chat"),
@@ -34,6 +32,7 @@ urlpatterns = [
     path('chat/delete/<chatroom_name>', views.chatroom_delete_view, name="chatroom-delete"),
     path('chat/leave/<chatroom_name>', views.chatroom_leave_view, name="chatroom-leave"),
     path('chat/fileupload/<chatroom_name>', views.chat_file_upload, name="chat-file-upload"),
+    path('messages/', views.chat_ui, name="messages"),
 
     # path('notifications/', views.notifications_view, name='notifications'),
     path('notifications/mark_as_read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),

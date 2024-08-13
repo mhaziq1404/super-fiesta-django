@@ -5,7 +5,7 @@
         <p>{{home_chat}} chat (Live-chat)</p>
     {% endif %}
   </div>
-  <div  id='chat_container' class="w-full h-[30rem] bg-indigo-100 p-2 rounded-br-md rounded-bl-md overflow-scroll">
+  <div  id='chat_container' class="w-full h-[calc(100vh-455px)] bg-indigo-100 p-2 rounded-br-md rounded-bl-md overflow-scroll">
 
     <ul id='chat_messages' class="flex flex-col justify-end gap-2 p-4">
       {% for message in chat_messages reversed %}

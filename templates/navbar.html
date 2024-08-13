@@ -69,25 +69,25 @@
         </div>
       </div>
 
-      <div class="dropdown dropdown-end">
+      <a href="{% url 'messages' %}" class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-          <div class="indicator">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor">
-              <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 8l7.89 5.26c.58.39 1.36.39 1.94 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span class="badge badge-xs bg-teal-700 text-white indicator-item" id="message-count"></span>
-          </div>
+            <div class="indicator">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 8l7.89 5.26c.58.39 1.36.39 1.94 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span class="badge badge-xs bg-teal-700 text-white indicator-item" id="message-count"></span>
+            </div>
         </div>
-      </div>
+    </a>
 
       <!-- Profile Dropdown -->
       <div class="dropdown dropdown-end">

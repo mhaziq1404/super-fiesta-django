@@ -2,16 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
-from .models import *
-from .forms import *
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+from django.db.models import Q
 from django.http import Http404
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+from .models import User, Notification, ChatGroup, Room, GroupMessage
+from .forms import MyUserCreationForm, ChatmessageCreateForm, RoomForm, UserForm, NewGroupForm, ChatRoomEditForm
 
 def loginPage(request):
-    page = 'login'
     if request.user.is_authenticated:
         return redirect('home')
 
@@ -23,23 +23,21 @@ def loginPage(request):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             messages.error(request, 'User does not exist')
+            return render(request, 'base/login_register.html', {'page': 'login'})
 
         user = authenticate(request, email=email, password=password)
 
-        if user is not None:
+        if user:
             login(request, user)
             return redirect('home')
         else:
             messages.error(request, 'Username OR password does not exist')
 
-    context = {'page': page}
-    return render(request, 'base/login_register.html', context)
-
+    return render(request, 'base/login_register.html', {'page': 'login'})
 
 def logoutUser(request):
     logout(request)
     return redirect('home')
-
 
 def registerPage(request):
     form = MyUserCreationForm()
@@ -57,15 +55,9 @@ def registerPage(request):
 
     return render(request, 'base/login_register.html', {'form': form})
 
-def notifications(request):
-    user = request.user
-    notifications = Notification.objects.filter(user=user).order_by('-created_at')
-    return render(request, 'notifications/notifications.html', {'notifications': notifications})
-
 def notifications_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
-    context = {'notifications': notifications}
-    return render(request, 'notifications.html', context)
+    return render(request, 'notifications/notifications.html', {'notifications': notifications})
 
 def mark_notification_as_read(request, notification_id):
     if request.method == 'POST':
@@ -81,22 +73,20 @@ def mark_notification_as_read(request, notification_id):
 @login_required(login_url='login')
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
-    chat_messages = chat_group.chat_messages.all()[:30]
-    form = ChatmessageCreateForm()
-
-    other_user = next((member for member in chat_group.members.all() if member != request.user), None)
-    
     if chat_group.is_private and request.user not in chat_group.members.all():
         raise Http404()
-    
-    # Optionally include email verification for joining the chat
-    # if chat_group.groupchat_name:
-    #     if request.user not in chat_group.members.all():
-    #         if request.user.emailaddress_set.exists():
-    #             chat_group.members.add(request.user)
-    #         else:
-    #             messages.warning(request, 'You need to verify your email to join the chat!')
-    #             return redirect('profile-settings')
+
+    chat_messages = chat_group.chat_messages.all()[:30]
+    form = ChatmessageCreateForm()
+    other_user = next((member for member in chat_group.members.all() if member != request.user), None)
+    q = request.GET.get('q', '')
+    rooms = Room.objects.filter(
+        Q(name__icontains=q) |
+        Q(description__icontains=q) |
+        Q(points__icontains=q)
+    )
+    room_count = Room.objects.filter(is_expired=False).count()
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
     if request.htmx and request.method == 'POST':
         form = ChatmessageCreateForm(request.POST)
@@ -106,15 +96,6 @@ def home(request, chatroom_name='public-chat'):
             message.group = chat_group
             message.save()
             return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
-    
-    q = request.GET.get('q', '')
-    rooms = Room.objects.filter(
-        Q(name__icontains=q) |
-        Q(description__icontains=q) |
-        Q(points__icontains=q)
-    )
-    room_count = Room.objects.filter(is_expired=False).count()
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
     context = {
         'chat_messages': chat_messages,
@@ -125,12 +106,10 @@ def home(request, chatroom_name='public-chat'):
         'rooms': rooms,
         'room_count': room_count,
         'user': request.user,
-        'home_chat': "Public-Chat",
         'notifications': notifications,
     }
 
     return render(request, 'base/home.html', context)
-    # return render(request, 'base/private_messages.html', context)
 
 def room_list(request):
     rooms = Room.objects.filter(is_expired=False)
@@ -140,111 +119,70 @@ def room_list(request):
 
 def player_list(request, room_id):
     room = get_object_or_404(Room, id=room_id)
-    
-    # Assuming you want the second participant
     participants = room.participants.all()
     other_player = participants[1] if len(participants) > 1 else None
-    
-    # Get the participant to check
-    participant = request.user
-    
     context = {
         'other_player': other_player,
         'room': room,
         'participants': participants,
-        'participant': participant,
+        'participant': request.user,
     }
-    
     if request.headers.get('HX-Request'):
         return render(request, 'room/partials/vsplayer.html', context)
-
-    
     return render(request, 'base/room.html', {'room': room})
 
 def kick_player(request):
     if request.method == 'POST':
         player_id = request.POST.get('player_id')
         room_id = request.POST.get('room_id')
-        
-        if not player_id or not room_id:
-            # Handle missing parameters
-            return redirect('room')
-        
-        room = get_object_or_404(Room, id=room_id)
-        player = get_object_or_404(User, id=player_id)
 
-        if player in room.participants.all():
-            room.participants.remove(player)
-            room.save()
-
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+        if player_id and room_id:
+            room = get_object_or_404(Room, id=room_id)
+            player = get_object_or_404(User, id=player_id)
+            if player in room.participants.all():
+                room.participants.remove(player)
+                room.save()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def leave_room(request):
     if request.method == 'POST':
         room_id = request.POST.get('room_id')
-        
-        if not room_id:
-            # Handle missing parameter
-            return redirect('home')
-        
-        room = get_object_or_404(Room, id=room_id)
-        user = request.user
-        
-        if user in room.participants.all():
-            room.participants.remove(user)
-        
-        # Optionally, add a success message or feedback
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+        if room_id:
+            room = get_object_or_404(Room, id=room_id)
+            user = request.user
+            if user in room.participants.all():
+                room.participants.remove(user)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def check_kickout_status(request):
-    # Get parameters
     room_id = request.GET.get('room_id')
     player_id = request.GET.get('player_id')
-    
-    if not room_id or not player_id:
-        return JsonResponse({'status': 'error', 'message': 'Missing parameters'})
 
-    room = get_object_or_404(Room, id=room_id)
-    player = get_object_or_404(User, id=player_id)
-
-    if player not in room.participants.all():
-        print("herererere")
-        return JsonResponse({'status': 'kickedout'})
-    
+    if room_id and player_id:
+        room = get_object_or_404(Room, id=room_id)
+        player = get_object_or_404(User, id=player_id)
+        if player not in room.participants.all():
+            return JsonResponse({'status': 'kickedout'})
     return JsonResponse({'status': 'still_in_room'})
-    
 
 @login_required(login_url='login')
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
-
     if room.opponent_type == "AI":
         return render(request, 'base/room.html', {'room': room})
 
     if request.user not in room.participants.all():
         room.participants.add(request.user)
 
-    participants = room.participants.all()
     chat_group = get_object_or_404(ChatGroup, room=room)
     chat_messages = chat_group.chat_messages.all()[:30]
     form = ChatmessageCreateForm()
-
     other_user = next((member for member in chat_group.members.all() if member != request.user), None)
 
     if chat_group.is_private and request.user not in chat_group.members.all():
         raise Http404()
 
-    context = {
-        'room': room,
-        'participants': participants,
-        'chat_messages': chat_messages,
-        'form': form,
-        'other_user': other_user,
-        'chatroom_name': room.name,
-        'chat_group': chat_group,
-    }
-
-    if request.htmx and request.method == 'POST':
+    if request.htmx:
         form = ChatmessageCreateForm(request.POST)
         if form.is_valid():
             message = form.save(commit=False)
@@ -252,51 +190,48 @@ def room(request, pk):
             message.group = chat_group
             message.room = room
             message.save()
-
             return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
 
-    if request.method == 'POST':
-        if request.user in room.participants.all():
-            room.participants.remove(request.user)
-            return redirect('home')
+    if request.method == 'POST' and request.user in room.participants.all():
+        room.participants.remove(request.user)
+        return redirect('home')
+
+    context = {
+        'room': room,
+        'participants': room.participants.all(),
+        'chat_messages': chat_messages,
+        'form': form,
+        'other_user': other_user,
+        'chatroom_name': room.name,
+        'chat_group': chat_group,
+    }
 
     return render(request, 'base/room.html', context)
 
-
-
 def userProfile(request, pk):
-    user = User.objects.get(id=pk)
+    user = get_object_or_404(User, id=pk)
     rooms = user.room_set.all()
-    # room_messages = user.message_set.all()
-    context = {'user': user, 'rooms': rooms}
-    return render(request, 'base/profile.html', context)
-
+    return render(request, 'base/profile.html', {'user': user, 'rooms': rooms})
 
 @login_required(login_url='login')
 def createRoom(request):
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
-            opponent_type = form.cleaned_data['opponent_type']
-            room = Room.objects.create(
-                host=request.user,
-                name=form.cleaned_data['name'],
-                points=form.cleaned_data['points'],
-                opponent_type=opponent_type,
-                description=form.cleaned_data['description'],
-                is_2player=(opponent_type == 'vs Player')
-            )
-            new_groupchat = ChatGroup.objects.create(
+            room = form.save(commit=False)
+            room.host = request.user
+            room.is_2player = (form.cleaned_data['opponent_type'] == 'vs Player')
+            room.save()
+            
+            ChatGroup.objects.create(
                 admin=request.user,
-                group_name=form.cleaned_data['name'],
-                groupchat_name=form.cleaned_data['name'],
-                room=room
+                group_name=room.name,
+                groupchat_name=room.name,
+                room=room,
+                members=[request.user]
             )
-            new_groupchat.members.add(request.user)
-            room.participants.add(request.user)
 
             if request.htmx:
-                # Return partial template for HTMX
                 rooms = Room.objects.filter(is_expired=False)
                 return render(request, 'room/room_list.html', {'rooms': rooms})
             else:
@@ -304,30 +239,27 @@ def createRoom(request):
     else:
         form = RoomForm()
 
-    context = {'form': form}
-    return render(request, 'base/room_form.html', context)
-
+    return render(request, 'base/room_form.html', {'form': form})
 
 @login_required(login_url='login')
 def updateRoom(request, pk):
-    room = Room.objects.get(id=pk)
-    form = RoomForm(instance=room)
+    room = get_object_or_404(Room, id=pk)
+
     if request.user != room.host:
         return HttpResponse('You are not allowed here!!')
 
+    form = RoomForm(instance=room)
     if request.method == 'POST':
-        room.name = request.POST.get('name')
-        room.description = request.POST.get('description')
-        room.save()
-        return redirect('home')
+        form = RoomForm(request.POST, instance=room)
+        if form.is_valid():
+            form.save()
+            return redirect('home')
 
-    context = {'form': form, 'room': room}
-    return render(request, 'base/room_form.html', context)
-
+    return render(request, 'base/room_form.html', {'form': form, 'room': room})
 
 @login_required(login_url='login')
 def deleteRoom(request, pk):
-    room = Room.objects.get(id=pk)
+    room = get_object_or_404(Room, id=pk)
 
     if request.user != room.host:
         return HttpResponse('You are not allowed here!!')
@@ -335,21 +267,8 @@ def deleteRoom(request, pk):
     if request.method == 'POST':
         room.delete()
         return redirect('home')
+
     return render(request, 'base/delete.html', {'obj': room})
-
-
-@login_required(login_url='login')
-def deleteMessage(request, pk):
-    message = Message.objects.get(id=pk)
-
-    if request.user != message.user:
-        return HttpResponse('You are not allowed here!!')
-
-    if request.method == 'POST':
-        message.delete()
-        return redirect('home')
-    return render(request, 'base/delete.html', {'obj': message})
-
 
 @login_required(login_url='login')
 def updateUser(request):
@@ -366,76 +285,42 @@ def updateUser(request):
 
     return render(request, 'base/update-user.html', {'form': form})
 
-
-def topicsPage(request):
-    return redirect('home')
-
-
-def activityPage(request):
-    room_messages = Message.objects.all()
-    return render(request, 'base/activity.html', {'room_messages': room_messages})
-
 @login_required(login_url='login')
 def pongPage(request, pk):
-    room = Room.objects.get(id=pk)
+    room = get_object_or_404(Room, id=pk)
 
     if request.method == 'POST':
         winner = request.POST.get('winner')
         if winner:
-            if room.opponent_type == 'AI':
-                if winner == 'AI':
-                    room.won_by_ai = True
-                    room.is_expired = True
-                    room.save()
-                    return JsonResponse({'status': 'success'})
-                else:
-                    room.won_by_user = request.user
-                    room.is_expired = True
-                    room.save()
-                    return JsonResponse({'status': 'success'})
-            if room.opponent_type == 'vs Player':
-                room.won_by_user = request.user
-                room.is_expired = True
-                room.save()
-                return JsonResponse({'status': 'success'})
-            if room.opponent_type == 'Tournament':
-                room.won_by_user = request.user
+            if room.opponent_type in ['AI', 'vs Player', 'Tournament']:
+                room.won_by_user = request.user if winner != 'AI' else None
+                room.won_by_ai = winner == 'AI'
                 room.is_expired = True
                 room.save()
                 return JsonResponse({'status': 'success'})
         return JsonResponse({'status': 'failed', 'error': 'No winner specified'})
-    
-    context = {'room': room}
-    return render(request, 'base/pong_ai.html', context)
+
+    return render(request, 'base/pong_ai.html', {'room': room})
 
 @login_required(login_url='login')
 def get_or_create_chatroom(request, username):
     if request.user.username == username:
         return redirect('home')
     
-    other_user = User.objects.get(username = username)
-    my_chatrooms = request.user.chat_groups.filter(is_private=True)
-    
-    
-    if my_chatrooms.exists():
-        for chatroom in my_chatrooms:
-            if other_user in chatroom.members.all():
-                chatroom = chatroom
-                break
-            else:
-                chatroom = ChatGroup.objects.create(is_private = True)
-                chatroom.members.add(other_user, request.user)
-    else:
-        chatroom = ChatGroup.objects.create(is_private = True)
-        chatroom.members.add(other_user, request.user)
-        
-    return redirect('chatroom', chatroom.group_name)
+    other_user = get_object_or_404(User, username=username)
+    chatroom = ChatGroup.objects.filter(is_private=True, members=request.user).first()
 
+    if chatroom and other_user in chatroom.members.all():
+        return redirect('chatroom', chatroom.group_name)
+
+    chatroom, created = ChatGroup.objects.get_or_create(is_private=True)
+    chatroom.members.add(other_user, request.user)
+    return redirect('chatroom', chatroom.group_name)
 
 @login_required(login_url='login')
 def create_groupchat(request):
     form = NewGroupForm()
-    
+
     if request.method == 'POST':
         form = NewGroupForm(request.POST)
         if form.is_valid():
@@ -444,82 +329,80 @@ def create_groupchat(request):
             new_groupchat.save()
             new_groupchat.members.add(request.user)
             return redirect('chatroom', new_groupchat.group_name)
-    
-    context = {
-        'form': form
-    }
-    return render(request, 'chat/create_groupchat.html', context)
 
+    return render(request, 'chat/create_groupchat.html', {'form': form})
 
 @login_required(login_url='login')
 def chatroom_edit_view(request, chatroom_name):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     if request.user != chat_group.admin:
         raise Http404()
-    
-    form = ChatRoomEditForm(instance=chat_group) 
-    
+
+    form = ChatRoomEditForm(instance=chat_group)
+
     if request.method == 'POST':
         form = ChatRoomEditForm(request.POST, instance=chat_group)
         if form.is_valid():
             form.save()
-            
             remove_members = request.POST.getlist('remove_members')
             for member_id in remove_members:
-                member = User.objects.get(id=member_id)
-                chat_group.members.remove(member)  
-                
-            return redirect('chatroom', chatroom_name) 
-    
-    context = {
-        'form' : form,
-        'chat_group' : chat_group
-    }   
-    return render(request, 'chat/chatroom_edit.html', context) 
+                member = get_object_or_404(User, id=member_id)
+                chat_group.members.remove(member)
+            return redirect('chatroom', chatroom_name)
 
+    return render(request, 'chat/chatroom_edit.html', {'form': form, 'chat_group': chat_group})
 
 @login_required(login_url='login')
 def chatroom_delete_view(request, chatroom_name):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     if request.user != chat_group.admin:
         raise Http404()
-    
+
     if request.method == "POST":
         chat_group.delete()
         messages.success(request, 'Chatroom deleted')
         return redirect('home')
-    
-    return render(request, 'chat/chatroom_delete.html', {'chat_group':chat_group})
 
+    return render(request, 'chat/chatroom_delete.html', {'chat_group': chat_group})
 
 @login_required(login_url='login')
 def chatroom_leave_view(request, chatroom_name):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
     if request.user not in chat_group.members.all():
         raise Http404()
-    
+
     if request.method == "POST":
         chat_group.members.remove(request.user)
         messages.success(request, 'You left the Chat')
         return redirect('home')
-    
-    
+
 def chat_file_upload(request, chatroom_name):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
-    
+
     if request.htmx and request.FILES:
         file = request.FILES['file']
         message = GroupMessage.objects.create(
-            file = file,
-            author = request.user, 
-            group = chat_group,
+            file=file,
+            author=request.user,
+            group=chat_group,
         )
         channel_layer = get_channel_layer()
-        event = {
-            'type': 'message_handler',
-            'message_id': message.id,
-        }
-        async_to_sync(channel_layer.group_send)(
-            chatroom_name, event
-        )
+        event = {'type': 'message_handler', 'message_id': message.id}
+        async_to_sync(channel_layer.group_send)(chatroom_name, event)
+
     return HttpResponse()
+
+@login_required(login_url='login')
+def chat_ui(request):
+# Fetch chat messages for the current user
+    chat_group = get_object_or_404(ChatGroup, group_name='public-chat')
+    if chat_group.is_private and request.user not in chat_group.members.all():
+        raise Http404()
+
+    chat_messages = chat_group.chat_messages.all()[:30]
+    
+    context = {
+        'chat_messages': chat_messages,
+    }
+    
+    return render(request, 'base/private_messages.html', context)
