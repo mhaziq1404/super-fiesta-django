@@ -34,6 +34,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, null=True)
     bio = models.TextField(null=True, default="The User too lazy to add a Bio")
     avatar = models.ImageField(null=True, default="avatar.svg")
+    group_chats = models.ManyToManyField('ChatGroup', related_name='group_members', blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -123,14 +124,3 @@ class GroupMessage(models.Model):
             return True 
         except:
             return False
-
-
-class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.title

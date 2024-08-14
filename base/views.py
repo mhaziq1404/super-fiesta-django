@@ -7,8 +7,10 @@ from django.db.models import Q
 from django.http import Http404
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from uuid import uuid4
+from django.utils.text import slugify
 
-from .models import User, Notification, ChatGroup, Room, GroupMessage
+from .models import User, ChatGroup, Room, GroupMessage
 from .forms import MyUserCreationForm, ChatmessageCreateForm, RoomForm, UserForm, NewGroupForm, ChatRoomEditForm
 
 def loginPage(request):
@@ -55,21 +57,6 @@ def registerPage(request):
 
     return render(request, 'base/login_register.html', {'form': form})
 
-def notifications_view(request):
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'notifications/notifications.html', {'notifications': notifications})
-
-def mark_notification_as_read(request, notification_id):
-    if request.method == 'POST':
-        try:
-            notification = Notification.objects.get(id=notification_id, user=request.user)
-            notification.is_read = True
-            notification.save()
-            return JsonResponse({'success': True})
-        except Notification.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Notification not found'})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
-
 @login_required(login_url='login')
 def home(request, chatroom_name='public-chat'):
     chat_group = get_object_or_404(ChatGroup, group_name=chatroom_name)
@@ -86,7 +73,6 @@ def home(request, chatroom_name='public-chat'):
         Q(points__icontains=q)
     )
     room_count = Room.objects.filter(is_expired=False).count()
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
     if request.htmx and request.method == 'POST':
         form = ChatmessageCreateForm(request.POST)
@@ -106,7 +92,8 @@ def home(request, chatroom_name='public-chat'):
         'rooms': rooms,
         'room_count': room_count,
         'user': request.user,
-        'notifications': notifications,
+        'chatroom_name_ws': chat_group.groupchat_name,
+        'home_chat': "Public",
     }
 
     return render(request, 'base/home.html', context)
@@ -203,6 +190,7 @@ def room(request, pk):
         'form': form,
         'other_user': other_user,
         'chatroom_name': room.name,
+        'chatroom_name_ws': chat_group.groupchat_name,
         'chat_group': chat_group,
     }
 
@@ -223,13 +211,21 @@ def createRoom(request):
             room.is_2player = (form.cleaned_data['opponent_type'] == 'vs Player')
             room.save()
             
-            ChatGroup.objects.create(
+            # Generate a unique suffix using UUID
+            unique_suffix = uuid4().hex[:6]  # Shorten UUID for brevity
+            
+            # Replace spaces with hyphens
+            formatted_name = room.name.replace(' ', '-')
+
+            chat_group = ChatGroup.objects.create(
                 admin=request.user,
-                group_name=room.name,
-                groupchat_name=room.name,
-                room=room,
-                members=[request.user]
+                group_name=f"{formatted_name}-{unique_suffix}",  # Append unique suffix
+                groupchat_name=f"{formatted_name}-{unique_suffix}",  # Append unique suffix
+                room=room
             )
+
+            # Assign the user to the group after saving
+            chat_group.members.set([request.user])
 
             if request.htmx:
                 rooms = Room.objects.filter(is_expired=False)
@@ -319,16 +315,29 @@ def get_or_create_chatroom(request, username):
 
 @login_required(login_url='login')
 def create_groupchat(request):
-    form = NewGroupForm()
-
     if request.method == 'POST':
         form = NewGroupForm(request.POST)
         if form.is_valid():
-            new_groupchat = form.save(commit=False)
-            new_groupchat.admin = request.user
-            new_groupchat.save()
-            new_groupchat.members.add(request.user)
-            return redirect('chatroom', new_groupchat.group_name)
+            unique_suffix = uuid4().hex[:6]
+            
+            formatted_name = slugify(form.cleaned_data['groupchat_name'])
+            group_name = f"{formatted_name}-{unique_suffix}"
+            
+            chat_group = ChatGroup.objects.create(
+                admin=request.user,
+                group_name=group_name,
+                groupchat_name=group_name,
+            )
+            
+            chat_group.members.set([request.user])
+
+            request.user.group_chats.add(chat_group)
+            request.user.save()
+            
+            return redirect('messages')
+
+    else:
+        form = NewGroupForm()
 
     return render(request, 'chat/create_groupchat.html', {'form': form})
 
@@ -394,14 +403,36 @@ def chat_file_upload(request, chatroom_name):
 
 @login_required(login_url='login')
 def chat_ui(request):
-# Fetch chat messages for the current user
-    chat_group = get_object_or_404(ChatGroup, group_name='public-chat')
-    if chat_group.is_private and request.user not in chat_group.members.all():
-        raise Http404()
+    # Fetch chat groups for the current user
+    chat_groups = request.user.group_chats.all()
 
-    chat_messages = chat_group.chat_messages.all()[:30]
-    
     context = {
+        'chat_groups': chat_groups,
+    }
+    
+    return render(request, 'base/private_messages.html', context)
+
+
+def chat_group_detail(request, id):
+    group = get_object_or_404(ChatGroup, id=id)
+    chat_groups = request.user.group_chats.all()
+    chat_messages = group.chat_messages.all()[:30]
+
+    if request.htmx:
+        form = ChatmessageCreateForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.author = request.user
+            message.group = group
+            message.room = room
+            message.save()
+            return render(request, 'private_message/partials/chat_message_p.html', {'message': message, 'user': request.user})
+
+    context = {
+        'group': group,
+        'chat_groups': chat_groups,
+        'selected_group_id': group.id,
+        'chatroom_name_ws': group.groupchat_name,
         'chat_messages': chat_messages,
     }
     

@@ -53,7 +53,7 @@
     <div class="pt-5"></div>
     <form id="chat_message_form" class="w-full"
     hx-ext="ws"
-    ws-connect="/ws/chatroom/{{ chatroom_name }}"
+    ws-connect="/ws/chatroom/{{ chatroom_name_ws }}"
     ws-send 
     _="on htmx:wsAfterSend reset() me"
     method="POST">

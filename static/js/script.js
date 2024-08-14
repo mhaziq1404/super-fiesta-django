@@ -6,24 +6,6 @@ function scrollToBottom(time=0) {
 }
 scrollToBottom()
 
-function markAsRead(notificationId) {
-    fetch(`/notifications/mark_as_read/${notificationId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ 'is_read': true })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Optionally remove or update the notification in the UI
-            location.reload();
-        }
-    });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     const chatbox = document.getElementById('chatbox');
     const toggleButton = document.getElementById('chatbox-toggle');

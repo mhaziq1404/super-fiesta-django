@@ -57,7 +57,8 @@ class ChatroomConsumer(WebsocketConsumer):
             'user': self.user,
             'chat_group': self.chatroom
         }
-        html = render_to_string("chat/partials/chat_message_p.html", context=context)
+        html = render_to_string("private_message/partials/chat_message_p.html", context=context)
+        # print(html)
         self.send(text_data=html)
         
         
@@ -84,25 +85,3 @@ class ChatroomConsumer(WebsocketConsumer):
         }
         html = render_to_string("chat/partials/online_count.html", context)
         self.send(text_data=html) 
-
-class NotificationConsumer(WebsocketConsumer):
-    def connect(self):
-        self.user = self.scope['user']
-        if not self.user.is_authenticated:
-            self.close()
-            return
-        self.GROUP_NAME = f'user-notifications-{self.user.id}'
-        self.channel_layer.group_add(
-            self.GROUP_NAME, self.channel_name
-        )
-        self.accept()
-
-    def disconnect(self, close_code):
-        if self.user.is_authenticated:
-            self.channel_layer.group_discard(
-                self.GROUP_NAME, self.channel_name
-            )
-
-    def notification_handler(self, event):
-        html = get_template("notification/partials/notification.html").render(context=event['event'])
-        self.send(text_data=json.dumps({'html': html}))

@@ -146,8 +146,28 @@
                             <span class="text-black text-lg font-semibold leading-8 px-8 py-3">VS</span>
                             <div class="flex-1 border-b border-gray-300"></div>
                         </div>
-                        <div id="player_list_container">
-                            {% include 'room/vsplayer.html' %}
+                        <div class="flex justify-between items-center h-16 p-4 my-6 rounded-lg border border-gray-100 shadow-md">
+                            <div class="flex items-center">
+                                <img class="rounded-full h-12 w-12" src="{{ request.user.avatar.url }}" alt="Logo" />
+                                <div class="ml-2">
+                                    <div class="text-sm font-semibold text-gray-600">You</div>
+                                    <div class="text-sm font-light text-gray-500">{{ request.user.bio }}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <!-- Hidden form -->
+                                <form id="postForm" action="" method="POST" style="display: none;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="leave-room">
+                                </form>
+    
+                                <!-- Anchor tag -->
+                                <a href="#" class="bg-red-400 hover:bg-red-500 p-2 rounded-full shadow-md flex justify-center items-center" onclick="document.getElementById('postForm').submit(); return false;">
+                                    <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H8m12 0-4 4m4-4-4-4M9 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h2"/>
+                                    </svg>  
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <div class="p-6">
@@ -258,9 +278,32 @@
                             <span class="text-black text-lg font-semibold leading-8 px-8 py-3">VS</span>
                             <div class="flex-1 border-b border-gray-300"></div>
                         </div>
-                        <div id="player_list_container">
-                          {% include 'room/vsplayer.html' %}
-                        </div>
+                        <div class="flex justify-between items-center h-16 p-4 my-6  rounded-lg border border-gray-100 shadow-md">
+                            <div class="flex items-center">
+                              <img class="rounded-full h-12 w-12" src="{{ request.user.avatar.url }}" alt="Logo" />
+                              <div class="ml-2">
+                                <div class="text-sm font-semibold text-gray-600">You</div>
+                                <div class="text-sm font-light text-gray-500">{{request.user.bio}}</div>
+                              </div>
+                            </div>
+                            <div>
+                              <!-- Hidden form -->
+                                <form id="postForm" action="" method="POST" style="display: none;">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="action" value="leave-room">
+                              </form>
+              
+                              <!-- Anchor tag -->
+                              <a href="#" class="bg-red-400 hover:bg-red-500 p-2 rounded-full shadow-md flex justify-center items-center" onclick="document.getElementById('postForm').submit(); return false;">
+                                  <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H8m12 0-4 4m4-4-4-4M9 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h2"/>
+                                  </svg>  
+                              </a>
+                            </div>
+                          </div>
+                          <div id="player_list_container">
+                                {% include 'room/vsplayer.html' %}
+                          </div>
                     </div>
                     <div class="p-6">
                         <a href="{% url 'pong' room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
@@ -296,6 +339,17 @@
 </div>
 
 {% endif %}
+
+<style>
+    .toggle__dot {
+        transition: all 0.3s ease-in-out;
+    }
+
+    input:checked ~ .toggle__dot {
+        transform: translateX(100%);
+        background-color: #68D391;
+    }
+</style>
 {% endblock %}
 
 <script>
