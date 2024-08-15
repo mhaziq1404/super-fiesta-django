@@ -9,44 +9,51 @@
 
     <ul id='chat_messages' class="flex flex-col justify-end gap-2 p-4">
       {% for message in chat_messages reversed %}
-      {% if message.author == user %}
-      <li class="flex justify-end mb-4">
-          <div class="bg-green-200 rounded-l-lg rounded-tr-lg p-4 max-w-[75%] text-black">
-              <span>{{ message.body }}</span>
-          </div>
-          <div class="flex items-end">
-              <svg height="13" width="8" >
-                  <path fill="#bbf7d0" d="M6.3,10.4C1.5,8.7,0.9,5.5,0,0.2L0,13l5.2,0C7,13,9.6,11.5,6.3,10.4z"/>
-              </svg>
-          </div>
-      </li>
-      {% else %}
-      <li>
-          <div class="flex justify-start">
-              <div class="flex items-end mr-2" >
-                  <a href="{% url 'user-profile' message.author.id %}">
-                      <div class="relative">
-                          <div id="user-{{ message.author.id }}"></div>
-                          <img class="w-8 h-8 rounded-full object-cover" src="{{ message.author.avatar.url }}">
-                      </div>
-                  </a>
-              </div>
-              <div class="flex items-end" >
-                  <svg height="13" width="8" >
-                      <path fill="white" d="M2.8,13L8,13L8,0.2C7.1,5.5,6.5,8.7,1.7,10.4C-1.6,11.5,1,13,2.8,13z"></path>
-                  </svg>
-              </div>
-              <div class="bg-white p-4 max-w-[75%] rounded-r-lg rounded-tl-lg text-black">
-                  <span>{{ message.body }}</span>
-              </div>  
-          </div>
-          <div class="text-sm font-light py-1 ml-10">
-              <span class="text-white">{{ message.author.profile.name }}</span> 
-              <span class="text-gray-400">@{{ message.author.username }}</span>
-          </div>
-      </li>
-      {% endif %}
-      {% endfor %}
+        {% if message.author == user %}
+            <!-- Message from Current User -->
+            <div class="col-start-6 col-end-13 p-3 rounded-lg">
+                <div class="flex items-center justify-start flex-row-reverse">
+                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 flex-shrink-0">
+                        {% if message.author.avatar %}
+                            <img src="{{ message.author.avatar.url }}" alt="{{ message.author.username }}'s avatar" class="h-full w-full object-cover rounded-full">
+                        {% else %}
+                            {{ message.author.username|slice:":1" | upper}} <!-- Fallback to displaying the initial letter of username -->
+                        {% endif %}
+                    </div>
+                    <div class="relative mr-3 text-sm bg-indigo-300 py-2 px-4 shadow rounded-xl">
+                        <div>{{ message.body }}</div>
+                        {% if message.is_seen %}
+                            <div class="absolute text-xs bottom-0 right-0 -mb-5 mr-2 text-gray-500">Seen</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Message from Other Users -->
+            <div class="col-start-1 col-end-8 p-3 rounded-lg">
+                <div class="flex flex-col items-start">
+                    <div class="flex flex-row items-center">
+                        <div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 flex-shrink-0">
+                            {% if message.author.avatar %}
+                            <a href="{% url 'user-profile' message.author.id %}" class="block h-full w-full rounded-full overflow-hidden">
+                                <img src="{{ message.author.avatar.url }}" alt="{{ message.author.username }}'s avatar" class="h-full w-full object-cover">
+                            </a>
+                            {% else %}
+                                {{ message.author.username|slice:":1" | upper}} <!-- Fallback to displaying the initial letter of username -->
+                            {% endif %}
+                        </div>
+                        <div class="relative ml-3 text-sm bg-white py-2 px-4 shadow rounded-xl">
+                            <div>{{ message.body }}</div>
+                        </div>
+                    </div>
+                    <!-- Username display below the message content -->
+                    <div class="text-xs text-gray-500 mt-1 ml-12">
+                        @{{ message.author.username }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
   </ul>
 
    </div>
