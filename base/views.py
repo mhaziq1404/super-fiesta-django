@@ -9,9 +9,10 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from uuid import uuid4
 from django.utils.text import slugify
+import random
 
-from .models import User, ChatGroup, Room, GroupMessage
-from .forms import MyUserCreationForm, ChatmessageCreateForm, RoomForm, UserForm, NewGroupForm, ChatRoomEditForm
+from .models import User, ChatGroup, Room, GroupMessage, Match
+from .forms import MyUserCreationForm, ChatmessageCreateForm, RoomForm, UserForm, NewGroupForm, ChatRoomEditForm, MatchScoreForm
 
 def loginPage(request):
     if request.user.is_authenticated:
@@ -123,6 +124,8 @@ def kick_player(request):
         player_id = request.POST.get('player_id')
         room_id = request.POST.get('room_id')
 
+        print("=============here===========")
+
         if player_id and room_id:
             room = get_object_or_404(Room, id=room_id)
             player = get_object_or_404(User, id=player_id)
@@ -155,6 +158,7 @@ def check_kickout_status(request):
 @login_required(login_url='login')
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
+    
     if room.opponent_type == "AI":
         return render(request, 'base/room.html', {'room': room})
 
@@ -179,10 +183,6 @@ def room(request, pk):
             message.save()
             return render(request, 'chat/partials/chat_message_p.html', {'message': message, 'user': request.user})
 
-    if request.method == 'POST' and request.user in room.participants.all():
-        room.participants.remove(request.user)
-        return redirect('home')
-
     context = {
         'room': room,
         'participants': room.participants.all(),
@@ -193,6 +193,28 @@ def room(request, pk):
         'chatroom_name_ws': chat_group.groupchat_name,
         'chat_group': chat_group,
     }
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'leave-room':
+            if request.user in room.participants.all():
+                room.participants.remove(request.user)
+                return redirect('home')
+            else:
+                # Handle user not being part of the room
+                messages.error(request, "You are not a participant of this room.")
+
+        elif action == 'ready':
+            if request.user in room.participants.all():
+                room.opp_ready = True
+                room.save()
+                return render(request, 'base/room.html', context)
+            else:
+                # Handle user not being part of the room
+                messages.error(request, "You are not a participant of this room.")
+
+        raise Http404()
 
     return render(request, 'base/room.html', context)
 
@@ -211,8 +233,7 @@ def createRoom(request):
             room.is_2player = (form.cleaned_data['opponent_type'] == 'vs Player')
             room.save()
             
-            # Generate a unique suffix using UUID
-            unique_suffix = uuid4().hex[:6]  # Shorten UUID for brevity
+            unique_suffix = uuid4().hex[:6]
             
             # Replace spaces with hyphens
             formatted_name = room.name.replace(' ', '-')
@@ -412,7 +433,7 @@ def chat_ui(request):
     
     return render(request, 'base/private_messages.html', context)
 
-
+@login_required(login_url='login')
 def chat_group_detail(request, id):
     group = get_object_or_404(ChatGroup, id=id)
     chat_groups = request.user.group_chats.all()
@@ -437,3 +458,122 @@ def chat_group_detail(request, id):
     }
     
     return render(request, 'base/private_messages.html', context)
+
+@login_required(login_url='login')
+def tournament_view(request, pk):
+    room = Room.objects.get(id=pk)  # Fetch the room object
+    participants = list(room.participants.all())
+    random.shuffle(participants)
+    opp_count = len(participants)
+
+    matches = {
+        'quarterfinals': [],
+        'semifinals': [],
+        'final': None
+    }
+
+    if opp_count == 8:
+        # Create Quarterfinals
+        for i in range(0, 8, 2):
+            match = Match(
+                player1=participants[i],
+                player2=participants[i+1],
+                round='Quarterfinal'
+            )
+            match.save()
+            matches['quarterfinals'].append(match)
+
+        # Create Semifinals
+        for _ in range(4):
+            match = Match(round='Semifinal')
+            match.save()
+            matches['semifinals'].append(match)
+
+        # Create Final with empty player1 and player2
+        final_match = Match(
+            round='Final',
+            is_final=True
+            # Do not set player1 and player2 yet
+        )
+        final_match.save()
+        matches['final'] = final_match
+
+    elif opp_count == 4:
+        # Create Semifinals
+        for i in range(0, 4, 2):
+            match = Match(
+                player1=participants[i],
+                player2=participants[i+1],
+                round='Semifinal'
+            )
+            match.save()
+            matches['semifinals'].append(match)
+
+        # Create Final with empty player1 and player2
+        final_match = Match(
+            round='Final',
+            is_final=True
+            # Do not set player1 and player2 yet
+        )
+        # final_match.save()
+        matches['final'] = final_match
+
+    context = {
+        'matches': matches,
+        'opp_count': opp_count,
+        'room': room,
+    }
+
+    return render(request, 'tournament/bracket.html', context)
+
+
+# @login_required(login_url='login')
+# def podium_view(request, pk):
+#     # Fetch the room object
+#     room = Room.objects.get(id=pk)
+    
+#     # Fetch all matches related to the room and order them by score to get podium positions
+#     matches = Match.objects.filter(room=room).order_by('-player1_score', '-player2_score')
+    
+#     # Get the top 3 matches for podium positions
+#     podium_matches = matches[:3]
+    
+#     context = {
+#         'matches': podium_matches,
+#     }
+    
+#     return render(request, 'tournament/podium.html', context)
+
+@login_required(login_url='login')
+def podium_view(request, pk):
+    # Dummy data for testing
+    class DummyPlayer:
+        def __init__(self, username, avatar_url):
+            self.username = username
+            self.avatar_url = avatar_url
+
+    class DummyMatch:
+        def __init__(self, player1, player2, player1_score=None, player2_score=None):
+            self.player1 = player1
+            self.player2 = player2
+            self.player1_score = player1_score or 0
+            self.player2_score = player2_score or 0
+
+    # Create dummy players
+    player1 = DummyPlayer(username="Player One", avatar_url="/static/images/player1.jpg")
+    player2 = DummyPlayer(username="Player Two", avatar_url="/static/images/player2.jpg")
+    player3 = DummyPlayer(username="Player Three", avatar_url="/static/images/player3.jpg")
+    player4 = DummyPlayer(username="Player Four", avatar_url="/static/images/player4.jpg")
+
+    # Create dummy matches
+    matches = [
+        DummyMatch(player1=player1, player2=player2, player1_score=3, player2_score=1),  # First place
+        DummyMatch(player1=player3, player2=player4, player1_score=2, player2_score=2),  # Second place
+        DummyMatch(player1=player2, player2=player3, player1_score=1, player2_score=0)   # Third place
+    ]
+
+    context = {
+        'matches': matches,
+    }
+    
+    return render(request, 'tournament/podium.html', context)

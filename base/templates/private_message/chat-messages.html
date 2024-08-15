@@ -25,7 +25,9 @@
                 <div class="flex flex-row items-center">
                     <div class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 flex-shrink-0">
                         {% if message.author.avatar %}
-                            <img src="{{ message.author.avatar.url }}" alt="{{ message.author.username }}'s avatar" class="h-full w-full object-cover rounded-full">
+                        <a href="{% url 'user-profile' message.author.id %}" class="block h-full w-full rounded-full overflow-hidden">
+                            <img src="{{ message.author.avatar.url }}" alt="{{ message.author.username }}'s avatar" class="h-full w-full object-cover">
+                        </a>
                         {% else %}
                             {{ message.author.username|slice:":1" | upper}} <!-- Fallback to displaying the initial letter of username -->
                         {% endif %}

@@ -55,3 +55,13 @@ class ChatRoomEditForm(ModelForm):
                 'maxlength' : '300', 
                 }),
         }
+
+
+class MatchScoreForm(forms.ModelForm):
+    class Meta:
+        model = Match
+        fields = ['player1_score', 'player2_score']
+        widgets = {
+            'player1_score': forms.NumberInput(attrs={'min': 0}),
+            'player2_score': forms.NumberInput(attrs={'min': 0}),
+        }

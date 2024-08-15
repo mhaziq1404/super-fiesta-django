@@ -124,3 +124,17 @@ class GroupMessage(models.Model):
             return True 
         except:
             return False
+        
+
+class Match(models.Model):
+    player1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='matches_as_player1')
+    player2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='matches_as_player2')
+    player1_score = models.IntegerField(null=True, blank=True)
+    player2_score = models.IntegerField(null=True, blank=True)
+    round = models.CharField(max_length=20)
+    is_final = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
+    winner = models.ForeignKey(User, related_name='match_winner', on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.player1} vs {self.player2} - {self.round}"

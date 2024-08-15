@@ -114,7 +114,10 @@
                         </div>
                     </div>
                     <div class="p-6">
-                        <a href="{% url 'pong' room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
+                        <!-- Disable the button if the opponent is not ready -->
+                        <a href="{% url 'pong' room.id %}"
+                           class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105
+                           {% if not room.opp_ready %}opacity-50 cursor-not-allowed Disable{% endif %}">
                             Start the game
                         </a>
                     </div>
@@ -171,9 +174,24 @@
                         </div>
                     </div>
                     <div class="p-6">
-                        <a href="{% url 'pong' room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
-                            Ready
-                        </a>
+                        <!-- Ready button form -->
+                        <form method="POST">
+                            {% csrf_token %}
+                            {% if room.opp_ready %}
+                                <!-- Display this button if the opponent is ready -->
+                                <button type="button"
+                                        class="btn h-16 flex items-center justify-center bg-gray-400 cursor-not-allowed w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out">
+                                    Waiting for host to start the game
+                                </button>
+                            {% else %}
+                                <!-- Display the "Ready" button if the opponent is not ready -->
+                                <input type="hidden" name="action" value="ready">
+                                <button type="submit"
+                                        class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
+                                    Ready
+                                </button>
+                            {% endif %}
+                        </form>
                     </div>
                 </div>
             </div>
@@ -182,6 +200,7 @@
     </div>
 </main>
 {% endif %}
+
 
 <!-- /*==============================
 =>  Tournament Room
@@ -192,6 +211,9 @@
     <!-- Lobby Container -->
     <div class="w-full bg-gray-900 rounded-md mb-4">
         <div class="bg-white rounded-lg shadow">
+            <a href="{% url 'podium_view' pk=room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
+                View Podium
+            </a>
             {% if request.user == room.host %}
             <div class="bg-gray-900 p-4 flex justify-center items-center">
                 <div class="bg-white w-full md:max-w-4xl rounded-lg shadow">
@@ -246,7 +268,8 @@
                         </div>
                     </div>
                     <div class="p-6">
-                        <a href="{% url 'pong' room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
+                        <a href="{% url 'tournament_view' room.id %}"
+                        class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
                             Start the tournament
                         </a>
                     </div>
@@ -306,7 +329,7 @@
                           </div>
                     </div>
                     <div class="p-6">
-                        <a href="{% url 'pong' room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
+                        <a href="" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
                             Ready
                         </a>
                     </div>
@@ -366,27 +389,6 @@ document.addEventListener("DOMContentLoaded", function () {
     chatbox.classList.add("hidden");
   });
 
-  // Chat functionality
-  const chatForm = document.getElementById("chat-form");
-  const chatInput = document.getElementById("chat-input");
-  const chatMessages = document.getElementById("chat-messages");
-
-  chatForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const message = chatInput.value.trim();
-    if (message) {
-      addChatMessage(message, "You");
-      chatInput.value = "";
-    }
-  });
-
-  function addChatMessage(message, sender) {
-    const messageElement = document.createElement("div");
-    messageElement.className = "mb-2";
-    messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
-    chatMessages.appendChild(messageElement);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
 });
 
 // Kickout popup logic
@@ -411,7 +413,6 @@ function checkKickoutStatus() {
 setInterval(checkKickoutStatus, 1000);
 
 popupButton.addEventListener('click', () => {
-  // Redirect to the home page after clicking the button
   window.location.href = '{% url "home" %}';
 });
 </script>

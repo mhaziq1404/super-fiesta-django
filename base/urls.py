@@ -37,5 +37,9 @@ urlpatterns = [
     path('chat/fileupload/<chatroom_name>/', views.chat_file_upload, name="chat-file-upload"),
     path('messages/', views.chat_ui, name="messages"),
     path('messages/<int:id>/', views.chat_group_detail, name='chat_group_detail'),
+
+    # tournament
+    path('room/tournament/<str:pk>/', views.tournament_view, name='tournament_view'),
+    path('room/<int:pk>/podium/', views.podium_view, name='podium_view'),
 ]
 
