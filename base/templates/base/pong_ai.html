@@ -2,6 +2,45 @@
 {% block content %}
 <body onload="main()">
     <style>
+        .myModal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%; 
+            max-width: 650px;
+            min-width: 600px; /* Could be more or less, depending on screen size */
+        }
+
+        /* Close Button */
+        .close-modal-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-modal-btn:hover,
+        .close-modal-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
         body {
             color: #000;
             font-family:Monospace;
@@ -54,7 +93,7 @@
     <div id="container"></div>
 
     <div id="info">
-        <br>
+        <br><br>
         <br><br>
         A (very) simple pong game built with Three.js R78
         <br><br>
@@ -66,18 +105,55 @@
     <div id="player1_score">
         0		
     </div>
-    
-    <div id="button">
-        <br>
-        <a style="background-color: transparent;border: none;display: inline-flex;align-items: center;gap: 1rem;cursor: pointer;transition: all ease-in-out 0.3s;border-radius: 5px;box-shadow: 1px 1px 3px 1px rgba(0, 0, 0, 0.15);font-weight: 100; background-color: #71c6dd;color: #3f4156;" href="{% url 'room' room.id %}">back</a>
+    <br>
+
+    <div id="button" style="display: none;">
+        <button id="openModalBtn"></button>
+    </div>
+
+    <div id="myModal" class="myModal">
+        <div class="modal-content">
+            <span class="close-modal-btn">&times;</span>
+            <h2>Game Ended</h2>
+            <h2 id="winner-message"></h2>
+            <br>
+            <a id="gameover" class="modal-link bg-teal-500 hover:bg-teal-600 text-white rounded px-4 py-2" href="{% url 'room' room.id %}">Back to Room</a>
+            &nbsp;
+            <a class="modal-link bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2" href="{% url 'home' %}">Leave Game</a>
+        </div>
     </div>
 
     <div id="player2_score">
         0		
     </div>
-    
 
     <script>
+        // Get modal element
+        var modal = document.getElementById("myModal");
+
+        // Get open button
+        var openModalBtn = document.getElementById("openModalBtn");
+
+        // Get close button
+        var closeBtn = document.getElementsByClassName("close-modal-btn")[0];
+
+        // Open modal
+        openModalBtn.onclick = function() {
+            modal.style.display = "block";
+        }
+
+        // Close modal when close button is clicked
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // Close modal when clicking outside the modal content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
         var camera, scene, renderer;
         var keyState = {};
         var plane, player1, player2, ball;
@@ -284,8 +360,9 @@
 
                 if (player2_score >= roomPoints) {
                     gameOver = true;
-                    alert("AI wins!");
+                    document.getElementById("winner-message").innerHTML = "AI wins!!!";
                     saveWinner("AI");  // Save winner
+                    document.getElementById("openModalBtn").click();
                 }
             }
 
@@ -305,8 +382,10 @@
 
                 if (player1_score >= roomPoints) {
                     gameOver = true;
-                    alert("{{room.host}} wins!");
+                    document.getElementById("winner-message").innerHTML = "{{room.host.username}} wins!!!";
                     saveWinner("{{room.host}}");  // Save winner
+                    document.getElementById("openModalBtn").click();
+                    
                 }
             }
 
