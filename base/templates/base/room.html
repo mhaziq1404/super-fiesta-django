@@ -57,6 +57,7 @@
 
 {% if room.opponent_type == 'vs Player' %}
 <main class="flex flex-col pt-4 pl-8 pr-8 pb-4 h-[calc(100vh-100px)] bg-gray-900 relative">
+    {% include 'room/invite_friend_modal.html' %}
     <!-- Lobby Container -->
     <div class="w-full bg-gray-900 rounded-md mb-4">
         <div class="bg-white rounded-lg shadow">
@@ -103,15 +104,15 @@
                             {% include 'room/vsplayer.html' %}
                         </div>
                         <div class="flex bg-gray-200 justify-center items-center h-16 p-4 my-6 rounded-lg shadow-inner">
-                            <div class="flex items-center border border-gray-400 p-2 border-dashed rounded cursor-pointer">
+                            <a id="inviteBtn" href="#" class="flex items-center border border-gray-400 p-2 border-dashed rounded cursor-pointer">
                                 <div>
                                     <svg class="text-gray-500 w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                 </div>
                                 <div class="ml-1 text-gray-500 font-medium">Invite a friend</div>
-                            </div>
-                        </div>
+                            </a>
+                        </div>                        
                     </div>
                     <div class="p-6">
                         <!-- Disable the button if the opponent is not ready -->
@@ -208,12 +209,15 @@
 
 {% if room.opponent_type == 'Tournament' %}
 <main class="flex flex-col pt-4 pl-8 pr-8 pb-4 h-[calc(100vh-100px)] bg-gray-900 relative">
+    {% include 'room/invite_friend_modal.html' %}
     <!-- Lobby Container -->
     <div class="w-full bg-gray-900 rounded-md mb-4">
         <div class="bg-white rounded-lg shadow">
             <a href="{% url 'podium_view' pk=room.id %}" class="btn h-16 flex items-center justify-center bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 w-full rounded-lg shadow-lg text-xl font-medium text-white transition-all duration-300 ease-in-out transform hover:scale-105">
                 View Podium
             </a>
+
+
             {% if request.user == room.host %}
             <div class="bg-gray-900 p-4 flex justify-center items-center">
                 <div class="bg-white w-full md:max-w-4xl rounded-lg shadow">
@@ -257,15 +261,15 @@
                           {% include 'room/vsplayer.html' %}
                         </div>
                         <div class="flex bg-gray-200 justify-center items-center h-16 p-4 my-6 rounded-lg shadow-inner">
-                            <div class="flex items-center border border-gray-400 p-2 border-dashed rounded cursor-pointer">
+                            <a id="inviteBtn" href="#" class="flex items-center border border-gray-400 p-2 border-dashed rounded cursor-pointer">
                                 <div>
                                     <svg class="text-gray-500 w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                 </div>
                                 <div class="ml-1 text-gray-500 font-medium">Invite a friend</div>
-                            </div>
-                        </div>
+                            </a>
+                        </div>                        
                     </div>
                     <div class="p-6">
                         <a href="{% url 'tournament_view' room.id %}"
@@ -280,6 +284,7 @@
                 <div class="bg-white w-full md:max-w-4xl rounded-lg shadow">
                     <div id="player_list_container">
                         {% include 'room/popup_kickedout.html' %}
+                        {% include 'room/invite_friend_modal.html' %}
                     </div>
                     <div class="h-12 flex justify-between items-center border-b border-gray-200 m-4 pb-4">
                         <div>
@@ -389,30 +394,5 @@ document.addEventListener("DOMContentLoaded", function () {
     chatbox.classList.add("hidden");
   });
 
-});
-
-// Kickout popup logic
-const popup = document.getElementById('popup');
-const popupButton = document.getElementById('popupButton');
-const roomID = {{ room.id }};
-const playerID = {{ request.user.id }};
-
-function checkKickoutStatus() {
-  fetch(`/check_kickout_status/${roomID}/${playerID}/`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.kicked_out) {
-        // Show the popup if kicked out
-        popup.classList.remove('hidden');
-      }
-    })
-    .catch(error => console.error('Error checking kickout status:', error));
-}
-
-// Check kickout status every second
-setInterval(checkKickoutStatus, 1000);
-
-popupButton.addEventListener('click', () => {
-  window.location.href = '{% url "home" %}';
 });
 </script>

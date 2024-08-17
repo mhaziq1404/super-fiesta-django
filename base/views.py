@@ -124,8 +124,6 @@ def kick_player(request):
         player_id = request.POST.get('player_id')
         room_id = request.POST.get('room_id')
 
-        print("=============here===========")
-
         if player_id and room_id:
             room = get_object_or_404(Room, id=room_id)
             player = get_object_or_404(User, id=player_id)
@@ -577,3 +575,36 @@ def podium_view(request, pk):
     }
     
     return render(request, 'tournament/podium.html', context)
+
+
+@login_required(login_url='login')
+def ai_playnow(request):
+    # Create a new room with the current user and AI as opponents
+    room = Room.objects.create(
+        host=request.user,
+        opponent_type="AI",  # Set opponent type to AI
+        name="vsAIGame",
+        description="vsAIGame",
+        is_2player=True,  # Assume it's a 2-player match (user vs AI)
+        points=11
+    )
+    
+    # Automatically add the current user as a participant
+    room.participants.add(request.user)
+    
+    # Save the room instance
+    room.save()
+    
+    # Redirect the user to the room page
+    return redirect('room', pk=room.id)
+
+
+@login_required(login_url='login')
+def join_room(request):
+    if request.method == "POST":
+        invitation_link = request.POST.get('invitation_link')
+        # Logic to process the invitation link and retrieve the room
+        room = get_object_or_404(Room, invitation_link=invitation_link)
+        room.participants.add(request.user)
+        return redirect('room', pk=room.id)
+    return redirect('home')

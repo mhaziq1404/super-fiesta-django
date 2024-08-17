@@ -6,6 +6,7 @@ from django.db import models
 import shortuuid
 from PIL import Image
 import os
+import uuid
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -52,14 +53,16 @@ class Room(models.Model):
     participants = models.ManyToManyField(User, related_name='participants', blank=True)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
-    points = models.IntegerField(default=0)
+    points = models.IntegerField(default=1)
+    
+    invitation_link = models.CharField(max_length=255, unique=True, blank=True, null=True)
 
     OPPONENT_TYPE_CHOICES = (
         ('vs Player', 'vs Player'),
         ('Tournament', 'Tournament'),
         ('AI', 'AI'),
     )
-    opponent_type = models.CharField(max_length=10, choices=OPPONENT_TYPE_CHOICES, default='ai')
+    opponent_type = models.CharField(max_length=10, choices=OPPONENT_TYPE_CHOICES, default='AI')
 
     won_by_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='won_by_user')
     won_by_ai = models.BooleanField(default=False)
@@ -73,6 +76,11 @@ class Room(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.invitation_link:
+            self.invitation_link = str(uuid.uuid4())
+        super().save(*args, **kwargs)
 
 
 class ChatGroup(models.Model):
