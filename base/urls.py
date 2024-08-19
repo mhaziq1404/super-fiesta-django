@@ -43,5 +43,10 @@ urlpatterns = [
     # tournament
     path('room/tournament/<str:pk>/', views.tournament_view, name='tournament_view'),
     path('room/<int:pk>/podium/', views.podium_view, name='podium_view'),
+
+    # friends
+    path('add_friend/<str:user_id>/', views.add_friend, name='add_friend'),
+    path('remove_friend/<str:user_id>/', views.remove_friend, name='remove_friend'),
+    path('cancel-friend-request/<int:user_id>/', views.cancel_friend_request, name='cancel_friend_request'),
 ]
 

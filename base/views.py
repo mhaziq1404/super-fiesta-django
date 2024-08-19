@@ -11,7 +11,7 @@ from uuid import uuid4
 from django.utils.text import slugify
 import random
 
-from .models import User, ChatGroup, Room, GroupMessage, Match
+from .models import User, ChatGroup, Room, GroupMessage, Match, Friend, Notification
 from .forms import MyUserCreationForm, ChatmessageCreateForm, RoomForm, UserForm, NewGroupForm, ChatRoomEditForm, MatchScoreForm
 
 def loginPage(request):
@@ -25,21 +25,23 @@ def loginPage(request):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            messages.error(request, 'User does not exist')
+            messages.error(request, 'Invalid email or password.')
             return render(request, 'base/login_register.html', {'page': 'login'})
 
         user = authenticate(request, email=email, password=password)
 
         if user:
             login(request, user)
+            messages.success(request, 'Logged in successfully.')
             return redirect('home')
         else:
-            messages.error(request, 'Username OR password does not exist')
+            messages.error(request, 'Invalid email or password.')
 
     return render(request, 'base/login_register.html', {'page': 'login'})
 
 def logoutUser(request):
     logout(request)
+    messages.success(request, 'Logged out successfully.')
     return redirect('home')
 
 def registerPage(request):
@@ -52,9 +54,10 @@ def registerPage(request):
             user.username = user.username.lower()
             user.save()
             login(request, user)
+            messages.success(request, 'Registration successful. You are now logged in.')
             return redirect('home')
         else:
-            messages.error(request, 'An error occurred during registration')
+            messages.error(request, 'An error occurred during registration. Please check the form and try again.')
 
     return render(request, 'base/login_register.html', {'form': form})
 
@@ -216,10 +219,34 @@ def room(request, pk):
 
     return render(request, 'base/room.html', context)
 
+
+@login_required(login_url='login')
 def userProfile(request, pk):
+    # Fetch the user profile based on the primary key
     user = get_object_or_404(User, id=pk)
+    
+    # Check if the current user and the fetched user are friends
+    is_friend = Friend.objects.filter(user=request.user, friend=user, confirmed=True).exists()
+    
+    # Check if a friend request was sent but not yet confirmed
+    friend_request_sent = Friend.objects.filter(user=request.user, friend=user, confirmed=False).exists()
+    
+    # Fetch the rooms related to the user (if applicable)
     rooms = user.room_set.all()
-    return render(request, 'base/profile.html', {'user': user, 'rooms': rooms})
+    
+    # Fetch notifications for the current user
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'user': user,
+        'is_friend': is_friend,
+        'friend_request_sent': friend_request_sent,
+        'rooms': rooms,
+        'notifications': notifications,
+    }
+
+    return render(request, 'base/profile.html', context)
+
 
 @login_required(login_url='login')
 def createRoom(request):
@@ -608,3 +635,90 @@ def join_room(request):
         room.participants.add(request.user)
         return redirect('room', pk=room.id)
     return redirect('home')
+
+
+def send_notification(user, sender, notification_type, title, message):
+    Notification.objects.create(
+        user=user,
+        sender=sender,
+        type=notification_type,
+        title=title,
+        message=message
+    )
+
+
+@login_required(login_url='login')
+def notifications(request):
+    # Fetch notifications for the logged-in user, ordered by most recent
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'notifications.html', {'notifications': notifications})
+
+
+@login_required(login_url='login')
+def mark_as_read(request, notification_id):
+    # Mark a specific notification as read
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    return redirect('notifications')
+
+
+@login_required(login_url='login')
+def add_friend(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+    if friend == request.user:
+        messages.error(request, "You cannot add yourself as a friend.")
+        return redirect('user-profile', pk=user_id)
+
+    # Create or get the friendship relationship
+    friendship, created = Friend.objects.get_or_create(
+        user=request.user,
+        friend=friend,
+        defaults={'confirmed': False}
+    )
+
+    if created:
+        # Send a notification to the friend about the friend request
+        send_notification(
+            friend,
+            request.user,
+            'friend_request',
+            'Friend Request',
+            f"{request.user.username} has sent you a friend request."
+        )
+        messages.success(request, "Friend request sent.")
+    elif friendship.confirmed:
+        messages.info(request, "You are already friends.")
+    else:
+        messages.info(request, "Friend request already sent.")
+
+    return redirect('user-profile', pk=user_id)
+
+
+@login_required(login_url='login')
+def remove_friend(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+    if friend == request.user:
+        messages.error(request, "You cannot remove yourself as a friend.")
+        return redirect('user-profile', pk=user_id)
+
+    try:
+        friendship = Friend.objects.get(user=request.user, friend=friend)
+        friendship.delete()
+        messages.success(request, f"You have removed {friend.username} from your friends.")
+    except Friend.DoesNotExist:
+        messages.error(request, "Friendship does not exist.")
+
+    return redirect('user-profile', pk=user_id)
+
+
+@login_required(login_url='login')
+def cancel_friend_request(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+    try:
+        friendship = Friend.objects.get(user=request.user, friend=friend, confirmed=False)
+        friendship.delete()
+        messages.success(request, "Friend request canceled.")
+    except Friend.DoesNotExist:
+        messages.error(request, "Friend request does not exist.")
+    return redirect('user-profile', pk=user_id)

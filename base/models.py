@@ -44,6 +44,35 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def add_friend(self, friend):
+        if not Friend.objects.filter(user=self, friend=friend).exists():
+            Friend.objects.create(user=self, friend=friend)
+
+    def remove_friend(self, friend):
+        try:
+            friendship = Friend.objects.get(user=self, friend=friend)
+            friendship.delete()
+        except Friend.DoesNotExist:
+            pass
+
+    def get_friends(self):
+        return User.objects.filter(friend_of=self)
+
+
+class Friend(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend_set')
+    friend = models.ForeignKey(User, on_delete=models.CASCADE, related_name='related_friend_set')
+    confirmed = models.BooleanField(default=False)  # Mutual friendship confirmation
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'friend')
+        verbose_name = 'Friendship'
+        verbose_name_plural = 'Friendships'
+
+    def __str__(self):
+        return f"{self.user.email} - {self.friend.email}"
 
 
 class Room(models.Model):
@@ -146,3 +175,21 @@ class Match(models.Model):
 
     def __str__(self):
         return f"{self.player1} vs {self.player2} - {self.round}"
+
+
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ('friend_request', 'Friend Request'),
+        ('friend_request_accepted', 'Friend Request Accepted'),
+        # Add more types as needed
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_notifications')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications', null=True)
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    def __str__(self):
+        return f"{self.user.email} - {self.title}"
