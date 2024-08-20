@@ -222,19 +222,34 @@ def room(request, pk):
 
 @login_required(login_url='login')
 def userProfile(request, pk):
-    # Fetch the user profile based on the primary key
     user = get_object_or_404(User, id=pk)
     
-    # Check if the current user and the fetched user are friends
-    is_friend = Friend.objects.filter(user=request.user, friend=user, confirmed=True).exists()
+    # Check if the users are already friends (confirmed=True)
+    is_friend = Friend.objects.filter(
+        Q(user=request.user, friend=user, confirmed=True) |
+        Q(user=user, friend=request.user, confirmed=True)
+    ).exists()
     
-    # Check if a friend request was sent but not yet confirmed
+    # Check if a friend request has been sent but not yet confirmed
     friend_request_sent = Friend.objects.filter(user=request.user, friend=user, confirmed=False).exists()
     
-    # Fetch the rooms related to the user (if applicable)
+    # Check if both users have sent friend requests to each other but not yet confirmed
+    mutual_requests = Friend.objects.filter(
+        (Q(user=request.user, friend=user) & Q(confirmed=False)) |
+        (Q(user=user, friend=request.user) & Q(confirmed=False))
+    )
+
+    # Print mutual_requests to the console for debugging
+    print(mutual_requests)
+    
+    # If there are mutual requests and they haven't been confirmed yet, confirm the friendship
+    if mutual_requests.count() == 2:
+        mutual_requests.update(confirmed=True)
+        is_friend = True  # Update is_friend to reflect the confirmed status
+        friend_request_sent = False  # No longer needed as the friendship is confirmed
+    
     rooms = user.room_set.all()
     
-    # Fetch notifications for the current user
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     
     context = {
@@ -246,6 +261,7 @@ def userProfile(request, pk):
     }
 
     return render(request, 'base/profile.html', context)
+
 
 
 @login_required(login_url='login')
