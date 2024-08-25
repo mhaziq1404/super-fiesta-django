@@ -21,6 +21,7 @@ fclean:
 		docker rm $$(docker ps -qa); \
 		docker rmi -f $$(docker images -qa); \
 		docker volume rm $$(docker volume ls -q); \
+		docker system prune; \
 		docker network ls -q | grep -v -E 'bridge|host|none' | xargs -r docker network rm;
 
 re:
