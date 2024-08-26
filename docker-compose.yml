@@ -2,12 +2,8 @@ services:
   base:
     build: ./
     command: 
-      # sh -c "
-        # python manage.py makemigrations &&
-        # python manage.py migrate &&
-        # python manage.py collectstatic --no-input &&
-        python manage.py runserver 0.0.0.0:8000
-      #   gunicorn main.wsgi:application --bind 0.0.0.0:8000 --threads 2 --workers 4 --timeout 300"
+      sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && gunicorn studybud.wsgi:application --bind 0.0.0.0:8000 --threads 2 --workers 4 --timeout 300"
+        # python manage.py runserver 0.0.0.0:8000
     ports: 
       - "8000:8000"
     networks:
@@ -16,33 +12,33 @@ services:
     #   - postgresql:postgresql
     volumes:
       - ./:/app
-      # - static:/app/static/
-      # - media:/app/media/
+      - static:/app/staticfiles/
+      - media:/app/mediafiles/
     env_file:
       - .env
-    # depends_on:
-      # - redis
+    depends_on:
+      - redis
       # - postgresql
     restart: unless-stopped
   
-  # nginx:
-  #   build: ./nginx
-  #   ports:
-  #     - "8081:8081"
-  #     - "4443:4443"
-  #   networks:
-  #     - backend_net
-  #   volumes:
-  #     - static:/app/static/
-  #     - media:/app/media/
-  #     # - ./services/nginx/conf/default.conf:/etc/nginx/nginx.conf:ro
-  #     - certs:/etc/nginx/ssl
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - base
-  #     - daphne
-  #   restart: unless-stopped
+  nginx:
+    build: ./nginx
+    ports:
+      - "8081:8081"
+      - "4443:4443"
+    networks:
+      - backend_net
+    volumes:
+      - static:/app/staticfiles/
+      - media:/app/mediafiles/
+      # - ./services/nginx/conf/default.conf:/etc/nginx/nginx.conf:ro
+      - certs:/etc/nginx/ssl
+    env_file:
+      - .env
+    depends_on:
+      - base
+      - daphne
+    restart: unless-stopped
 
   daphne:
     build: ./
@@ -178,7 +174,7 @@ volumes:
   # prometheus_vol:
   # alertmanager_vol:
   # elasticsearch_vol:
-  # certs:
+  certs:
   static:
   media:
 
