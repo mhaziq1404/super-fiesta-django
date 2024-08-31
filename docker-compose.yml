@@ -8,8 +8,8 @@ services:
       - "8000:8000"
     networks:
       - backend_net
-    # links:
-    #   - postgresql:postgresql
+    links:
+      - postgresql:postgresql
     volumes:
       - ./:/app
       - static:/app/staticfiles/
@@ -18,7 +18,7 @@ services:
       - .env
     depends_on:
       - redis
-      # - postgresql
+      - postgresql
     restart: unless-stopped
   
   nginx:
@@ -54,59 +54,59 @@ services:
     networks:
       - backend_net
 
-  # postgresql:
-  #   image: postgres:latest
-  #   ports:
-  #     - "5432:5432"
-  #   networks:
-  #     - backend_net
-  #   volumes:
-  #     - postgres_vol:/var/lib/postgresql/data/
-  #   environment:
-  #     POSTGRES_DB: ${POSTGRES_DB}
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #   restart: unless-stopped
+  postgresql:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    networks:
+      - backend_net
+    volumes:
+      - postgres_vol:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: unless-stopped
 
-  # prometheus:
-  #   image: prom/prometheus
-  #   ports:
-  #     - "9090:9090"
-  #   networks:
-  #     - backend_net
-  #   volumes:
-  #     - prometheus_vol:/etc/prometheus
-  #     - "./rules.yml:/etc/prometheus/rules.yml"
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #   restart: unless-stopped
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend_net
+    volumes:
+      - prometheus_vol:/etc/prometheus
+      - "./rules.yml:/etc/prometheus/rules.yml"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
 
-  # # node-exporter:
-  # #   image: prom/node-exporter
-  # #   networks:
-  # #     - backend_net
-  # #   ports:
-  # #     - 9100:9100
+  node-exporter:
+    image: prom/node-exporter
+    networks:
+      - backend_net
+    ports:
+      - 9100:9100
 
-  # alertmanager:
-  #   image: prom/alertmanager
-  #   ports:
-  #     - "9093:9093"
-  #   volumes:
-  #     - alertmanager_vol:/etc/alertmanager
-  #   command:
-  #     - '--config.file=/etc/alertmanager/alertmanager.yml'
-  #   networks:
-  #     - backend_net
-  #   restart: unless-stopped
+  alertmanager:
+    image: prom/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - alertmanager_vol:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    networks:
+      - backend_net
+    restart: unless-stopped
 
-  # grafana:
-  #   image: grafana/grafana
-  #   ports:
-  #    - "3000:3000"
-  #   volumes:
-  #     - grafana_vol:/var/lib/grafana
-  #   restart: unless-stopped
+  grafana:
+    image: grafana/grafana
+    ports:
+     - "3000:3000"
+    volumes:
+      - grafana_vol:/var/lib/grafana
+    restart: unless-stopped
 
   redis:
     image: redis:latest
@@ -169,10 +169,10 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  # postgres_vol:
-  # grafana_vol:
-  # prometheus_vol:
-  # alertmanager_vol:
+  postgres_vol:
+  grafana_vol:
+  prometheus_vol:
+  alertmanager_vol:
   # elasticsearch_vol:
   certs:
   static:
