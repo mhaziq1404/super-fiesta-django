@@ -28,9 +28,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = bool(os.environ.get("DEBUG", default=0))
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ['https://localhost:4443', 'http://localhost', 'wss://localhost']
+CSRF_TRUSTED_ORIGINS = ['https://localhost:4443', 'http://localhost', 'wss://localhost', 'https://*']
 
-CSRF_TRUSTED_ORIGINS = [ 'https://*' ]
+# CSRF_TRUSTED_ORIGINS = [ 'https://*' ]
 
 
 # Application definition
